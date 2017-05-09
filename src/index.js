@@ -1,17 +1,16 @@
-import VaultClientClass, { Errors } from './vaultclient/VaultClient';
+import VaultClientClass, { Utils, Errors } from './vaultclient/VaultClient';
 import TidePayAPIClass from './tidepay/TidePayAPI';
 
-const VaultClient = new VaultClientClass(Config.isunpayrpcURL);
-const TidePayAPI = new TidePayAPIClass(Config.isunpayrpcURL);
-
 export default {
-  VaultClient,
-  TidePayAPI,
+  VaultClientClass,
+  TidePayAPIClass,
+  Utils,  
   Errors,
 };
 
 export {
-  VaultClient,
-  TidePayAPI,
+  VaultClientClass,
+  TidePayAPIClass,
+  Utils,
   Errors,
 };

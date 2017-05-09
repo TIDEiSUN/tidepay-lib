@@ -8,6 +8,8 @@ module.exports = {
     path.join(__dirname, 'src', 'index.js'),
   ],
   output: {
+    libraryTarget: 'umd',
+    library: 'tidepay',
     path: path.join(__dirname, 'build'),
     filename: 'tidepay-lib.js'
   },
