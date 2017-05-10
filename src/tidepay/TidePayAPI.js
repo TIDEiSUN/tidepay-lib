@@ -40,6 +40,35 @@ export default class TidePayAPIClass {
     })
   }
 
+  /**
+   * Get the latest withdrawal fee
+   * @param {String} currency Currency to query (3-letter code)
+   */
+  getWithdrawalFee(currency = null) {
+    const qs = { currency };
+    const url = Utils.addQueryString(`${this.isunpayrpcURL}/withdrawalfee`, qs);
+    console.log('getWithdrawalFee', url);
+    return fetch(url)
+    .then((res) => {
+      return Utils.handleFetchResponse(res);
+    });
+  }
+
+  /**
+   * Get the latest exchange rate
+   * @param {String} base Base currency (3-letter code)
+   * @param {String|Array} symbols Limit results to specific currencies (3-letter codes)
+   */
+  getExchangeRate(base = null, symbols = null) {
+    const qs = { base, symbols };
+    const url = Utils.addQueryString(`${this.isunpayrpcURL}/exchangerate`, qs);
+    console.log('getExchangeRate', url);
+    return fetch(url)
+    .then((res) => {
+      return Utils.handleFetchResponse(res);
+    });
+  }
+
   getAccountBalances(address, options = {}) {
     return this.getDataApiUrl()
       .then((data_apiURL) => {

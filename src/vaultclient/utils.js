@@ -56,6 +56,25 @@ export default {
     return resp.json();
   },
 
+  addQueryString(baseUrl, queryString) {
+    const qsArray = [];
+    Object.keys(queryString).forEach((key) => {
+      const value = queryString[key];
+      if (value !== null && value !== undefined) {
+        if (Array.isArray(value)) {
+          const mappedArray = value.map((arrayValue) => `${key}=${arrayValue}`);
+          qsArray.push(...mappedArray);
+        } else {
+          qsArray.push(`${key}=${value}`);
+        }
+      }
+    });
+    if (qsArray.length > 0) {
+      return `${baseUrl}?${qsArray.join('&')}`;
+    }
+    return baseUrl;
+  },
+
   handleFetchError(err, message) {
     console.error(`${message}:`, err);
     return Promise.reject(err);
