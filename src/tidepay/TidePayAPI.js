@@ -231,20 +231,9 @@ export default class TidePayAPIClass {
         const options = {
           counterparty: gatewayAddress,
         };
-        const body = {
-          params: {
-            account: address,
-            ledger: 'current',
-          },
-        };
-        console.log(body);
-        const pconfig = {
-          method: 'POST',
-          data: body,
-        };
+        const url = Utils.addQueryString(`${data_apiURL}/accounts/${address}/pockets`, options);
 
-        const poptions = Utils.makeFetchRequestOptions(pconfig);
-        return fetch(`${data_apiURL}/getPockets`, poptions)
+        return fetch(url)
         .then((resp) => {
           return Utils.handleFetchResponse(resp);
         })
@@ -261,21 +250,9 @@ export default class TidePayAPIClass {
           counterparty: gatewayAddress,
           currency,
         };
-        const body = {
-          params: {
-            account: address,
-            ledger: 'current',
-            currency: currency,
-          },
-        };
-        console.log(body);
-        const pconfig = {
-          method: 'POST',
-          data: body,
-        };
+        const url = Utils.addQueryString(`${data_apiURL}/accounts/${address}/pockets`, options);
 
-        const poptions = Utils.makeFetchRequestOptions(pconfig);
-        return fetch(`${data_apiURL}/getPockets`, poptions)
+        return fetch(url)
         .then((resp) => {
           return Utils.handleFetchResponse(resp);
         })
