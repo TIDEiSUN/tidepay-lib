@@ -1,5 +1,6 @@
 import BlobAPI from './blob';
 import AuthInfo from './authinfo';
+import CustomKeys from './customkeys';
 import crypt from './crypt';
 import Utils from './utils';
 import Errors from './Errors';
