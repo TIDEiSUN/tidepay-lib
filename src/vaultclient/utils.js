@@ -1,3 +1,4 @@
+import parser from 'url';
 import sjcl from './sjcl';
 import Errors from './Errors';
 
@@ -69,8 +70,10 @@ export default {
         }
       }
     });
+
     if (qsArray.length > 0) {
-      return `${baseUrl}?${qsArray.join('&')}`;
+      const parsed = parser.parse(baseUrl);
+      return baseUrl.concat(parsed.search ? '&' : '?', qsArray.join('&'));
     }
     return baseUrl;
   },

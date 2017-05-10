@@ -68,7 +68,26 @@ export default class TidePayAPIClass {
    * @param {String|Array} symbols Limit results to specific currencies (3-letter codes)
    */
   getExchangeRate(base = null, symbols = null) {
-    const qs = { base, symbols };
+    return this.getDataApiUrl()
+      .then((dataApiUrl) => {
+        const qs = { base, symbols };
+        const url = Utils.addQueryString(`${dataApiUrl}/exchange/rates`, qs);
+
+        return fetch(url);
+      })
+      .then((res) => {
+        return Utils.handleFetchResponse(res);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'getExchangeRate');
+      });
+  }
+
+  previewExchange(fromCurrency, fromValue, toCurrency) {
+    const qs = {
+      base: fromCurrency,
+      symbols: toCurrency,
+    };
     const url = Utils.addQueryString(`${this.isunpayrpcURL}/exchangerate`, qs);
 
     return fetch(url)
@@ -76,9 +95,13 @@ export default class TidePayAPIClass {
       return Utils.handleFetchResponse(res);
     })
     .catch((err) => {
-      return Utils.handleFetchError(err, 'getExchangeRate');
+      return Utils.handleFetchError(err, 'previewExchange');
     });
   }
+
+  // TODO
+  // submigExchangeRequest() {
+  // }
 
   getAccountBalances(address, options = {}) {
     return this.getDataApiUrl()
