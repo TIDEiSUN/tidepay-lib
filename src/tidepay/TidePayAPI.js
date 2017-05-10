@@ -194,7 +194,7 @@ export default class TidePayAPIClass {
         address: account.address,
         minAmount: {
           currency: toCurrency,
-          value: String(fromValue / exchangeRate),
+          value: String(fromValue * exchangeRate),
           counterparty: gatewayAddress,
         },
       },
