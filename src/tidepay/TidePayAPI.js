@@ -11,9 +11,9 @@ export default class TidePayAPIClass {
     if (this.dataapiURL) {
       return Promise.resolve(this.dataapiURL);
     }
-    return fetch(this.isunpayrpcURL + '/tidepayurl')
+    return fetch(`${this.isunpayrpcURL}/tidepayurl`)
       .then((res) => {
-        return res.json();
+        return Utils.handleFetchResponse(res);
       })
       .then((value) => {
         this.dataapiURL = value.dataapi;
@@ -21,23 +21,28 @@ export default class TidePayAPIClass {
         return Promise.resolve(this.dataapiURL);
       })
       .catch((err) => {
-        console.error('Failed to get data api url', err);
-        return Promise.reject(err);
+        return Utils.handleFetchError(err, 'getDataApiUrl');
       });
   }
 
   getGatewayAddress() {
-    return fetch(this.isunpayrpcURL + '/gatewayaddress')
+    return fetch(`${this.isunpayrpcURL}/gatewayaddress`)
     .then((res) => {
-      return res.json();
+      return Utils.handleFetchResponse(res);
     })
+    .catch((err) => {
+      return Utils.handleFetchError(err, 'getGatewayAddress');
+    });
   }
 
   getCurrencies() {
-    return fetch(this.isunpayrpcURL + '/currency')
+    return fetch(`${this.isunpayrpcURL}/currency`)
     .then((res) => {
-      return res.json();
+      return Utils.handleFetchResponse(res);
     })
+    .catch((err) => {
+      return Utils.handleFetchError(err, 'getCurrencies');
+    });
   }
 
   /**
@@ -47,10 +52,13 @@ export default class TidePayAPIClass {
   getWithdrawalFee(currency = null) {
     const qs = { currency };
     const url = Utils.addQueryString(`${this.isunpayrpcURL}/withdrawalfee`, qs);
-    console.log('getWithdrawalFee', url);
+
     return fetch(url)
     .then((res) => {
       return Utils.handleFetchResponse(res);
+    })
+    .catch((err) => {
+      return Utils.handleFetchError(err, 'getWithdrawalFee');
     });
   }
 
@@ -62,50 +70,65 @@ export default class TidePayAPIClass {
   getExchangeRate(base = null, symbols = null) {
     const qs = { base, symbols };
     const url = Utils.addQueryString(`${this.isunpayrpcURL}/exchangerate`, qs);
-    console.log('getExchangeRate', url);
+
     return fetch(url)
     .then((res) => {
       return Utils.handleFetchResponse(res);
+    })
+    .catch((err) => {
+      return Utils.handleFetchError(err, 'getExchangeRate');
     });
   }
 
   getAccountBalances(address, options = {}) {
     return this.getDataApiUrl()
       .then((data_apiURL) => {
-        let url = `${data_apiURL}/accounts/${address}/balances`
+        const qs = {
+          currency: options.currency,
+        };
+        const url = Utils.addQueryString(`${data_apiURL}/accounts/${address}/balances`, qs);
 
-        if (options.currency) {
-          url = `${url}?currency=${options.currency}`
-        }
-
-        return fetch(url).then((resp) => {
-          return resp.json()
-        }).then((json)=>{
-          return json.result
+        return fetch(url)
+        .then((resp) => {
+          return Utils.handleFetchResponse(resp);
         })
+        .then((json) => {
+          return json.result;
+        })
+        .catch((err) => {
+          return Utils.handleFetchError(err, 'getAccountBalances');
+        });
       });
   }
 
   getAccountTransactions(myAddress, options = {}) {
     return this.getDataApiUrl()
       .then((data_apiURL) => {
-        let url = `${data_apiURL}/accounts/${myAddress}/transactions?type=Payment&descending=true&result=tesSUCCESS`
-        if (options.currency) {
-          url = `${url}&currency=${options.currency}`
-        }
-        return fetch(url).then((resp) => {
-          return resp.json();
+        const qs = {
+          type: 'Payment',
+          descending: true,
+          result: 'tesSUCCESS',
+          currency: options.currency,
+        };
+        const url = Utils.addQueryString(`${data_apiURL}/accounts/${myAddress}/transactions`, qs);
+
+        return fetch(url)
+        .then((resp) => {
+          return Utils.handleFetchResponse(resp);
         })
+        .catch((err) => {
+          return Utils.handleFetchError(err, 'getAccountTransactions');
+        });
       });
   }
-  
+
   sendPayment(sourceAccount, payment) {
     const pconfig = {
       method: 'POST',
-      data: payment
+      data: payment,
     };
 
-    const poptions = Utils.makeFetchRequestOptions(pconfig);  
+    const poptions = Utils.makeFetchRequestOptions(pconfig);
     return fetch(`${this.isunpayrpcURL}/preparePayment`, poptions)
       .then((resp) => {
         return Utils.handleFetchResponse(resp);
@@ -120,7 +143,7 @@ export default class TidePayAPIClass {
             maxLedgerVersion: prepared.instructions.maxLedgerVersion,
           },
         };
-                
+
         const options = Utils.makeFetchRequestOptions(config);
 
         return fetch(`${this.isunpayrpcURL}/signedTransaction`, options)
@@ -129,7 +152,7 @@ export default class TidePayAPIClass {
           })
           .then((data) => {
             return Promise.resolve(data);
-          }) 
+          })
           .catch((err) => {
             return Utils.handleFetchError(err, 'sendPayment');
           });
@@ -201,30 +224,33 @@ export default class TidePayAPIClass {
     };
     return this.sendPayment(account, payment);
   }
-  
+
   getAccountPockets(gatewayAddress, address) {
     return this.getDataApiUrl()
       .then((data_apiURL) => {
         const options = {
           counterparty: gatewayAddress,
         };
-        let url=`${data_apiURL}/getPockets`
-        let body = {
-          "params": {
-            "account": address,
-            "ledger": "current"
-          }
-        }
-        console.log(body)
-        return fetch(url, {
-          method:'post',
-          headers: new Headers({
-            'Content-Type': 'application/json'
-          }),
-          body:JSON.stringify(body)
-        }).then(resp=>{
-          return resp.json()
+        const body = {
+          params: {
+            account: address,
+            ledger: 'current',
+          },
+        };
+        console.log(body);
+        const pconfig = {
+          method: 'POST',
+          data: body,
+        };
+
+        const poptions = Utils.makeFetchRequestOptions(pconfig);
+        return fetch(`${data_apiURL}/getPockets`, poptions)
+        .then((resp) => {
+          return Utils.handleFetchResponse(resp);
         })
+        .catch((err) => {
+          return Utils.handleFetchError(err, 'getAccountPockets');
+        });
       });
   }
 
@@ -235,24 +261,27 @@ export default class TidePayAPIClass {
           counterparty: gatewayAddress,
           currency,
         };
-        let url=`${data_apiURL}/getPockets`
-        let body = {
-          "params": {
-            "account": address,
-            "ledger": "current",
-            "currency":currency
-          }
-        }
-        console.log(body)
-        return fetch(url, {
-          method:'post',
-          headers: new Headers({
-            'Content-Type': 'application/json'
-          }),
-          body:JSON.stringify(body)
-        }).then(resp=>{
-          return resp.json()
+        const body = {
+          params: {
+            account: address,
+            ledger: 'current',
+            currency: currency,
+          },
+        };
+        console.log(body);
+        const pconfig = {
+          method: 'POST',
+          data: body,
+        };
+
+        const poptions = Utils.makeFetchRequestOptions(pconfig);
+        return fetch(`${data_apiURL}/getPockets`, poptions)
+        .then((resp) => {
+          return Utils.handleFetchResponse(resp);
         })
+        .catch((err) => {
+          return Utils.handleFetchError(err, 'getAccountPocket');
+        });
       });
   }
 
@@ -285,7 +314,7 @@ export default class TidePayAPIClass {
             maxLedgerVersion: prepared.instructions.maxLedgerVersion,
           },
         };
-        
+
         const options = Utils.makeFetchRequestOptions(config);
 
         return fetch(`${this.isunpayrpcURL}/pocket`, options);
@@ -295,7 +324,7 @@ export default class TidePayAPIClass {
       })
       .then((data) => {
         return Promise.resolve(data);
-      }) 
+      })
       .catch((err) => {
         return Utils.handleFetchError(err, 'setPocket');
       });

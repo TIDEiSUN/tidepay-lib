@@ -22,7 +22,7 @@ export default {
     if (!phone) {
       return '';
     }
-    const first = phone.substr(0, phone.length - 4).replace(/\d/g,'*');
+    const first = phone.substr(0, phone.length - 4).replace(/\d/g, '*');
     const last = phone.substr(-4);
     return first.concat(last);
   },
@@ -62,7 +62,7 @@ export default {
       const value = queryString[key];
       if (value !== null && value !== undefined) {
         if (Array.isArray(value)) {
-          const mappedArray = value.map((arrayValue) => `${key}=${arrayValue}`);
+          const mappedArray = value.map(arrayValue => `${key}=${arrayValue}`);
           qsArray.push(...mappedArray);
         } else {
           qsArray.push(`${key}=${value}`);
