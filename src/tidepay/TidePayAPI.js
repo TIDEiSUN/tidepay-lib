@@ -182,7 +182,7 @@ export default class TidePayAPIClass {
       });
   }
 
-  sendInternalPayment(gatewayAddress, sourceAccount, destinationRippleAddress, currency, value) {
+  sendInternalPayment(gatewayAddress, sourceAccount, destinationAddress, currency, value) {
     const amount = {
       currency,
       value,
@@ -194,7 +194,7 @@ export default class TidePayAPIClass {
         maxAmount: amount,
       },
       destination: {
-        address: destinationRippleAddress,
+        address: destinationAddress,
         amount: amount,
       },
     };
