@@ -26,6 +26,7 @@
     "bignumber.js": "^4.0.2",
     "decimal.js": "^5.0.8",
     "extend": "^3.0.1",
+    "js-sha3": "^0.5.7",
     "jssha": "^2.2.0",
     "whatwg-fetch": "^2.0.3",
     "x-address-codec": "^0.7.2"

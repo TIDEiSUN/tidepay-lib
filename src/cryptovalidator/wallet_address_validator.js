@@ -1,15 +1,17 @@
 (function (isNode) {
-    var base58, cryptoUtils, currencies;
+    var base58, cryptoUtils, currencies, ethereumAddress;
 
-    if(isNode) {
+    if (isNode) {
         base58 = require('./base58');
         cryptoUtils = require('./crypto_utils');
         currencies = require('./currencies');
+        ethereumAddress = require('./ethereum_address');
     } else {
         var imports = window.WAValidator.__imports;
         base58 = imports.base58;
         cryptoUtils = imports.cryptoUtils;
         currencies = imports.currencies;
+        ethereumAddress = imports.ethereumAddress;
     }
 
     var DEFAULT_CURRENCY_NAME = 'bitcoin',
@@ -46,8 +48,16 @@
             var correctAddressTypes,
                 currency = currencies.getByNameOrSymbol(currencyNameOrSymbol),
                 addressType = this.getAddressType(address);
-            
-            if(networkType === 'prod' || networkType === 'testnet'){
+
+            if (!currency) {
+                return false;
+            }
+
+            if (currency.symbol === 'eth' || currency.symbol === 'etc') {
+                return ethereumAddress.isAddress(address);
+            }
+
+            if (networkType === 'prod' || networkType === 'testnet') {
                 correctAddressTypes = currency.addressTypes[networkType]
             } else {
                 correctAddressTypes = currency.addressTypes.prod.concat(currency.addressTypes.testnet);
@@ -58,7 +68,7 @@
     };
 
     // export WAValidator module
-    if(isNode) {
+    if (isNode) {
         module.exports = WAValidator;
     } else {
         window.WAValidator = WAValidator;

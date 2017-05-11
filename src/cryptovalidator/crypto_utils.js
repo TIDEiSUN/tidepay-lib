@@ -1,5 +1,6 @@
 (function (isNode) {
     var jsSHA = isNode ? require('jssha') : window.jsSHA;
+    var jsSHA3 = isNode ? require('js-sha3') : window.jsSHA3;
 
     function numberToHex (number) {
         var hex = Math.round(number).toString(16);
@@ -18,8 +19,12 @@
             return hex;
         },
         sha256: function (hexString) {
-            var sha = new jsSHA(hexString, 'HEX');
-            return sha.getHash('SHA-256', 'HEX');
+            var sha = new jsSHA('SHA-256', 'HEX');
+            sha.update(hexString);
+            return sha.getHash('HEX');
+        },
+        keccak256: function (hexString) {
+            return jsSHA3.keccak_256(hexString);
         }
     };
 

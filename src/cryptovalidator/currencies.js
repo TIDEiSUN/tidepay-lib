@@ -44,6 +44,14 @@
             name: 'namecoin',
             symbol: 'nmc',
             addressTypes: {prod: ['34'], testnet: []}
+        },{
+            name: 'ethereum',
+            symbol: 'eth',
+            addressTypes: {prod: [], testnet: []}
+        },{
+            name: 'ethereum classic',
+            symbol: 'etc',
+            addressTypes: {prod: [], testnet: []}
         }];
 
 
