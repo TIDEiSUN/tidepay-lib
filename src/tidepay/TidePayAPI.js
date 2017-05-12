@@ -285,11 +285,7 @@ export default class TidePayAPIClass {
       });
   }
 
-  addPocket(gatewayAddress, sourceAccount, currency) {
-    return this.setPocket(gatewayAddress, sourceAccount, currency, false);
-  }
-
-  setPocket(gatewayAddress, sourceAccount, currency, frozen = false) {
+  setPocket(sourceAccount, currency, frozen = false) {
     const pconfig = {
       method: 'POST',
       data: {
