@@ -128,12 +128,7 @@ export default class BlobVaultAPI {
           authToken,
           blobData,
         };
-        const activatePromise = BlobAPI.authActivateAccount(options);
-        return Promise.all([account, activatePromise]);
-      })
-      .then(([account, resp]) => {
-        const { secret } = account;
-        return Promise.resolve({ ...resp, secret });
+        return BlobAPI.authActivateAccount(options);
       });
   }
 
