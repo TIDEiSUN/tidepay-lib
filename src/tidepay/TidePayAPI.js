@@ -132,6 +132,8 @@ export default class TidePayAPIClass {
           descending: true,
           result: 'tesSUCCESS',
           currency: options.currency,
+           start:options.start,
+          end:options.end,
         };
         const url = Utils.addQueryString(`${data_apiURL}/accounts/${myAddress}/transactions`, qs);
 
@@ -144,6 +146,8 @@ export default class TidePayAPIClass {
         });
       });
   }
+
+  
 
   sendPayment(sourceAccount, payment) {
     const pconfig = {
