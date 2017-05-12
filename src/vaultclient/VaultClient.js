@@ -171,6 +171,7 @@ class VaultClientClass {
       url: authInfo.blobvault,
       data,
     };
+    console.log('authlogin info', options)
     return this.client.authLogin(options);
   }
 
