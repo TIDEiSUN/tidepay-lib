@@ -251,7 +251,7 @@ export default {
       return Utils.handleFetchResponse(resp);
     })
     .then((data) => {
-      return Promise.resolve({...data, newBlobData: blob.data });
+      return Promise.resolve({...data, newBlobData: blob.data, encrypted_secret: blob.encrypted_secret });
     })
     .catch((err) => {
       return Utils.handleFetchError(err, 'authActivateAccount');

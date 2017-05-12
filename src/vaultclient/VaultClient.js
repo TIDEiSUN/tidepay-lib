@@ -166,9 +166,9 @@ class VaultClientClass {
     const { data } = blob;
     return this.client.authActivateAccount(customKeys, email, authToken, data, createAccountToken)
       .then((resp) => {
-        const { result, loginToken, newBlobData, secret } = resp;
+        const { result, loginToken, newBlobData, encrypted_secret } = resp;
         const resultLoginInfo = updateLoginInfo(loginInfo, result, newBlobData);
-        resultLoginInfo.secret = secret;
+        resultLoginInfo.blob.encrypted_secret = encrypted_secret;
         return Promise.resolve({ loginInfo: resultLoginInfo, loginToken });
       });
   }

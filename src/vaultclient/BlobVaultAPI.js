@@ -198,8 +198,8 @@ export default class BlobVaultAPI {
 
     return this.getAuthInfo(username)
       .then((authInfo) => {
-        const customKeys = new CustomKeys(authInfo, password);
-        return customKeys.deriveKeys();
+        const customKeys = new CustomKeys(authInfo);
+        return customKeys.deriveKeys(password);
       })
       .then((customKeys) => create(customKeys.authInfo, customKeys));
   }
