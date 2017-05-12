@@ -1,18 +1,6 @@
-// FIXME instanceof Errors.FetchError does not work
+import ExtendableError from 'es6-error';
 
-class BaseError extends Error {
-  constructor(message) {
-    super(message);
-    this.name = this.constructor.name;
-    if (typeof Error.captureStackTrace === 'function') {
-      Error.captureStackTrace(this, this.constructor);
-    } else {
-      this.stack = (new Error(message)).stack;
-    }
-  }
-}
-
-class FetchError extends BaseError {
+class FetchError extends ExtendableError {
   constructor(status, text, code = null, info = null) {
     let message;
     if (code !== null) {
