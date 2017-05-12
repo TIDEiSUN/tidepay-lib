@@ -114,14 +114,7 @@ export default {
         }
       }
 
-      // return with newly decrypted blob
-      const { encrypted_secret } = resp;
-      if (encrypted_secret) {
-        const secret = crypt.decrypt(customKeys.unlock, encrypted_secret);
-        resolve({ blob: blobObj, customKeys, secret });
-      } else {
-        resolve({ blob: blobObj, customKeys, secret: null });
-      }
+      resolve({ blob: blobObj, customKeys });
     });
   },
 

@@ -90,72 +90,12 @@ export default class BlobVaultAPI {
       return Promise.reject(new Error('User does not exists.'));
     }
 
-    return customKeys.deriveUnlockKey()
-      .then(() => {
-        try {
-          const secret = crypt.decrypt(customKeys.unlock, encryptSecret);
-          return Promise.resolve({ customKeys, secret });
-        } catch (error) {
-          return Promise.reject(error);
-        }
-      });
-  }
-
-  /**
-   * updateBlob
-   * @param {object} options
-   * @param {string} options.username
-   * @param {string} options.masterkey
-   * @param {object} options.blob
-   */
-
-  updateBlob(options) {
-    const customKeys = options.customKeys;
-    const authInfo = customKeys.authInfo;
-
-    if (!authInfo.exists) {
-      return Promise.reject(new Error('User does not exists.'));
+    try {
+      const secret = crypt.decrypt(customKeys.unlock, encryptSecret);
+      return Promise.resolve(secret);
+    } catch (error) {
+      return Promise.reject(error);
     }
-    if (!authInfo.emailVerified) {
-      return Promise.reject(new Error('Account has not been verified.'));
-    }
-
-    return customKeys.deriveKeys()
-      .then(() => {
-        options.keys = customKeys;
-        return BlobAPI.updateBlob(options);
-      });
-  }
-
-  /**
-   * changePassword
-   * @param {object} options
-   * @param {string} options.username
-   * @param {string} options.password
-   * @param {string} options.masterkey
-   * @param {object} options.blob
-   */
-
-  changePassword(options) {
-    const password = String(options.password).trim();
-
-    const customKeys = options.customKeys;
-    const authInfo = customKeys.authInfo;
-
-    if (!authInfo.exists) {
-      return Promise.reject(new Error('User does not exists.'));
-    }
-    if (!authInfo.emailVerified) {
-      return Promise.reject(new Error('Account has not been verified.'));
-    }
-
-    customKeys.setPassword(password);
-
-    return customKeys.deriveKeys()
-      .then(() => {
-        options.keys = customKeys;
-        return BlobAPI.updateKeys(options);
-      });
   }
 
   /**
@@ -357,3 +297,7 @@ BlobVaultAPI.prototype.authVerifyUpdatePhone = BlobAPI.authVerifyUpdatePhone;
 BlobVaultAPI.prototype.authLogin = BlobAPI.authLogin;
 
 BlobVaultAPI.prototype.getBlob = BlobAPI.getBlob;
+
+BlobVaultAPI.prototype.updateBlob = BlobAPI.updateBlob;
+
+BlobVaultAPI.prototype.changePassword = BlobAPI.updateKeys;

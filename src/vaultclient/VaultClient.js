@@ -54,6 +54,42 @@ function updateLoginInfo(loginInfo, result, newBlobData = null) {
   return { ...loginInfo, blob: newBlob, customKeys: newCustomKeys };
 }
 
+function checkEmailVerified(authInfo) {
+  if (!authInfo.exists) {
+    return Promise.reject(new Error('User does not exists.'));
+  }
+  if (!authInfo.emailVerified) {
+    return Promise.reject(new Error('Account has not been verified.'));
+  }
+  return Promise.resolve();
+}
+
+function serializeLoginInfo(loginInfo) {
+  return JSON.stringify(loginInfo);
+}
+
+function deserializeLoginInfo(str) {
+  const strData = JSON.parse(str);
+  if (!Object.prototype.hasOwnProperty.call(strData, 'blob')) {
+    return strData;
+  }
+
+  const {
+    blob,
+    customKeys,
+    ...strDataRest
+  } = strData;
+
+  const blobObj = BlobObj.deserialize(blob);
+  const customKeysObj = CustomKeys.deserialize(customKeys);
+
+  return { blob: blobObj, customKeys: customKeysObj, ...strDataRest };
+}
+
+function cloneLoginInfo(loginInfo) {
+  return deserializeLoginInfo(serializeLoginInfo(loginInfo));
+}
+
 class VaultClientClass {
   constructor(isunpayrpcURL) {
     // initialize vault client
@@ -61,60 +97,67 @@ class VaultClientClass {
   }
 
   unlockAccount(loginInfo) {
-    if (loginInfo.secret) {
-      return Promise.resolve(loginInfo);
-    }
-    console.log('unlock: new login info');
-    const newLoginInfo = this.deserializeLoginInfo(this.serializeLoginInfo(loginInfo));
-    return this.client.unlock(newLoginInfo.blob.encrypted_secret, newLoginInfo.customKeys)
-      .then((result) => {
-        newLoginInfo.secret = result.secret;
-        return Promise.resolve(newLoginInfo);
-      });
+    const { customKeys, blob } = loginInfo;
+    const { encrypted_secret } = blob;
+    return this.client.unlock(encrypted_secret, customKeys);
   }
 
-  updateBlob(username, loginInfo) {
+  updateBlob(username, loginInfo, newBlob) {
+    const _updateBlob = (secret, customKeys) => {
+      const options = {
+        username,
+        masterkey: secret,
+        blob: newBlob,
+      };
+
+      // TODO blob.key
+      const { authInfo } = customKeys;
+      return checkEmailVerified(authInfo)
+        .then(() => this.client.updateBlob(options));
+    };
+
     return this.unlockAccount(loginInfo)
-      .then((unlockedLoginInfo) => {
-        if (unlockedLoginInfo === loginInfo) {
-            console.log('change password: new login info');
-        }
-        const newLoginInfo = unlockedLoginInfo === loginInfo ? this.deserializeLoginInfo(this.serializeLoginInfo(loginInfo)) : unlockedLoginInfo;
-        const options = {
-          username: username,
-          masterkey: newLoginInfo.secret,
-          blob: newLoginInfo.blob,
-          customKeys: newLoginInfo.customKeys,
-        };
-        return this.client.updateBlob(options)
-          .then((resolved) => {
-            return Promise.resolve({ ...resolved, loginInfo: newLoginInfo });
-          });
+      .then(secret => _updateBlob(secret, loginInfo.customKeys))
+      .then((resolved) => {
+        const newLoginInfo = cloneLoginInfo(loginInfo);
+        newLoginInfo.blob = newBlob;
+        return Promise.resolve({ ...resolved, loginInfo: newLoginInfo });
       });
   }
 
   changePassword(username, newPassword, loginInfo) {
-    return this.unlockAccount(loginInfo)
-      .then((unlockedLoginInfo) => {
-        if (unlockedLoginInfo === loginInfo) {
-            console.log('change password: new login info');
+    const _changePassword = (blob, secret, oldCustomKeys, newCustomKeys) => {
+      const options = {
+        username,
+        masterkey: secret,
+        blob,
+        keys: newCustomKeys,
+      };
+
+      // TODO update blob.key
+
+      const { authInfo } = oldCustomKeys;
+      return checkEmailVerified(authInfo)
+        .then(() => this.client.changePassword(options))
+        .then(resolved => Promise.resolve({ newCustomKeys, resolved }));
+    };
+
+    const newCustomKeysPromise = this.createAndDeriveCustomKeys(username, newPassword, loginInfo.customKeys.authInfo);
+    const unlockPromise = this.unlockAccount(loginInfo);
+    return Promise.all([
+      unlockPromise,
+      newCustomKeysPromise,
+    ])
+      .then(([secret, newCustomKeys]) => _changePassword(loginInfo.blob, secret, loginInfo.customKeys, newCustomKeys))
+      .then((results) => {
+        const { newCustomKeys, resolved } = results;
+        const newLoginInfo = cloneLoginInfo(loginInfo);
+        if (Object.prototype.hasOwnProperty.call(resolved, 'last_id_change_date')) {
+          newLoginInfo.blob.last_id_change_date = resolved.last_id_change_date;
+          newLoginInfo.blob.last_id_change_timestamp = resolved.last_id_change_timestamp;
         }
-        const newLoginInfo = unlockedLoginInfo === loginInfo ? this.deserializeLoginInfo(this.serializeLoginInfo(loginInfo)) : unlockedLoginInfo;
-        const options = {
-          username: username,
-          password: newPassword,
-          masterkey: newLoginInfo.secret,
-          blob: newLoginInfo.blob,
-          customKeys: newLoginInfo.customKeys,
-        };
-        return this.client.changePassword(options)
-          .then((resolved) => {
-            if (Object.prototype.hasOwnProperty.call(resolved, 'last_id_change_date')) {
-              newLoginInfo.blob.last_id_change_date = resolved.last_id_change_date;
-              newLoginInfo.blob.last_id_change_timestamp = resolved.last_id_change_timestamp;
-            }
-            return Promise.resolve({ ...resolved, loginInfo: newLoginInfo });
-          });
+        newLoginInfo.customKeys = newCustomKeys;
+        return Promise.resolve({ ...resolved, loginInfo: newLoginInfo });
       });
   }
 
@@ -151,17 +194,18 @@ class VaultClientClass {
 
   set2FAInfo(loginInfo, enable, phone) {
     return this.unlockAccount(loginInfo)
-      .then((unlockedLoginInfo) => {
+      .then((secret) => {
+        const { blob } = loginInfo;
         const options = {
-          masterkey: unlockedLoginInfo.secret,
+          masterkey: secret,
           enabled: enable,
           phoneNumber: phone.phoneNumber,
           countryCode: phone.countryCode,
-          blob: unlockedLoginInfo.blob,
+          blob,
         };
         return BlobAPI.set2FA(options)
           .then((result) => {
-            return Promise.resolve({ ...result, loginInfo: unlockedLoginInfo });
+            return Promise.resolve({ ...result, loginInfo });
           });
       });
   }
@@ -175,14 +219,15 @@ class VaultClientClass {
     return this.client.authLogin(options);
   }
 
-  createCustomKeys(username, password) {
-    return this.client.getAuthInfo(username)
+  createAndDeriveCustomKeys(username, password, inAuthInfo = null) {
+    const authInfoPromise = inAuthInfo ? Promise.resolve(inAuthInfo) : this.client.getAuthInfo(username);
+    return authInfoPromise
     .then((authInfo) => {
       if (!authInfo.exists) {
         return Promise.reject(new Error('User does not exists.'));
       }
       const customKeys = new CustomKeys(authInfo, password);
-      return Promise.resolve(customKeys);
+      return customKeys.deriveKeys(password);
     });
   }
 
@@ -233,12 +278,13 @@ class VaultClientClass {
 
   authRequestUpdateEmail(loginInfo, email, hostlink) {
     return this.unlockAccount(loginInfo)
-      .then((unlockedLoginInfo) => {
+      .then((secret) => {
+        const { blob, username } = loginInfo;
         const options = {
-          url: unlockedLoginInfo.blob.url,
-          blob: unlockedLoginInfo.blob,
-          masterkey: unlockedLoginInfo.secret,
-          username: unlockedLoginInfo.username,
+          url: blob.url,
+          blob,
+          masterkey: secret,
+          username,
           data: {
             email,
             hostlink,
@@ -247,7 +293,7 @@ class VaultClientClass {
         return this.client.authRequestUpdateEmail(options)
           .then((resp) => {
             const { result, ...restResp } = resp;
-            const resultLoginInfo = updateLoginInfo(unlockedLoginInfo, result);
+            const resultLoginInfo = updateLoginInfo(loginInfo, result);
             return Promise.resolve({ ...restResp, loginInfo: resultLoginInfo });
           });
       });
@@ -255,8 +301,8 @@ class VaultClientClass {
 
   authVerifyUpdateEmail(loginInfo, email, emailToken, authToken) {
     return this.unlockAccount(loginInfo)
-      .then((unlockedLoginInfo) => {
-        const { customKeys } = unlockedLoginInfo;
+      .then((secret) => {
+        const { customKeys, blob, username } = loginInfo;
         const recoveryKey = Utils.createRecoveryKey(email);
         const data = {
           email,
@@ -267,16 +313,16 @@ class VaultClientClass {
         };
 
         const options = {
-          url: unlockedLoginInfo.blob.url,
-          blob: unlockedLoginInfo.blob,
-          masterkey: unlockedLoginInfo.secret,
-          username: unlockedLoginInfo.username,
+          url: blob.url,
+          blob,
+          masterkey: secret,
+          username,
           data,
         };
         return this.client.authVerifyUpdateEmail(options)
           .then((resp) => {
             const { result, ...restResp } = resp;
-            const resultLoginInfo = updateLoginInfo(unlockedLoginInfo, result);
+            const resultLoginInfo = updateLoginInfo(loginInfo, result);
             return Promise.resolve({ ...restResp, loginInfo: resultLoginInfo });
           });
       });
@@ -289,60 +335,67 @@ class VaultClientClass {
     return Object.assign(new BlobObj(), blob, { data: newData });
   }
 
+  sumUpdateLoginInfo(loginInfo, result, newBlobData) {
+    return updateLoginInfo(loginInfo, result, newBlobData);
+  }
+
   authRequestUpdatePhone(loginInfo, phone) {
+    const _authRequestUpdatePhone = (username, blob, secret) => {
+      const { countryCode, phoneNumber } = phone;
+
+      const options = {
+        url: blob.url,
+        blob,
+        masterkey: secret,
+        username,
+        data: {
+          countryCode,
+          phoneNumber,
+          via: 'sms',
+        },
+      };
+
+      return this.client.authRequestUpdatePhone(options);
+    }
+
     return this.unlockAccount(loginInfo)
-      .then((unlockedLoginInfo) => {
-        const { countryCode, phoneNumber } = phone;
-
-        const options = {
-          url: unlockedLoginInfo.blob.url,
-          blob: unlockedLoginInfo.blob,
-          masterkey: unlockedLoginInfo.secret,
-          username: unlockedLoginInfo.username,
-          data: {
-            countryCode,
-            phoneNumber,
-            via: 'sms',
-          },
-        };
-
-        return this.client.authRequestUpdatePhone(options)
-          .then((resp) => {
-            const { result, ...restResp } = resp;
-            const resultLoginInfo = updateLoginInfo(unlockedLoginInfo, result);
-            return Promise.resolve({ ...restResp, loginInfo: resultLoginInfo });
-          });
+      .then(secret => _authRequestUpdatePhone(loginInfo.username, loginInfo.blob, secret))
+      .then((resp) => {
+        const { result, ...restResp } = resp;
+        const resultLoginInfo = updateLoginInfo(loginInfo, result);
+        return Promise.resolve({ ...restResp, loginInfo: resultLoginInfo });
       });
   }
 
   authVerifyUpdatePhone(loginInfo, phone, phoneToken, authToken, newBlob) {
+    const _authVerifyUpdatePhone = (blob, secret, username) => {
+      const { phoneNumber, countryCode } = phone;
+      const data = {
+        countryCode,
+        phoneNumber,
+        phoneToken,
+        authToken,
+        data: newBlob.encrypt(),
+        revision: newBlob.revision,
+      };
+
+      const options = {
+        url: blob.url,
+        blob,
+        masterkey: secret,
+        username,
+        data,
+      };
+
+      return this.client.authVerifyUpdatePhone(options);
+    }
+
     return this.unlockAccount(loginInfo)
-      .then((unlockedLoginInfo) => {
-        const { blob, secret, username } = unlockedLoginInfo;
-        const { phoneNumber, countryCode } = phone;
-        const data = {
-          countryCode,
-          phoneNumber,
-          phoneToken,
-          authToken,
-          data: newBlob.encrypt(),
-          revision: newBlob.revision,
-        };
-
-        const options = {
-          url: blob.url,
-          blob,
-          masterkey: secret,
-          username,
-          data,
-        };
-
-        return this.client.authVerifyUpdatePhone(options)
-          .then((resp) => {
-            const { result, ...restResp } = resp;
-            const resultLoginInfo = updateLoginInfo(unlockedLoginInfo, result, newBlob.data);
-            return Promise.resolve({ ...restResp, loginInfo: resultLoginInfo });
-          });
+      .then(secret => _authVerifyUpdatePhone(loginInfo.blob, secret, loginInfo.username))
+      .then((resp) => {
+        const { result, ...restResp } = resp;
+        const resultLoginInfo = updateLoginInfo(loginInfo, result, newBlob.data);
+        return Promise.resolve({ ...restResp, loginInfo: resultLoginInfo });
       });
   }
 
@@ -365,12 +418,11 @@ class VaultClientClass {
         return this.client.handleRecovery(resp, customKeys);
       })
       .then((results) => {
-        const { blob, secret, customKeys } = results;
+        const { blob, customKeys } = results;
 
         return Promise.resolve({
           blob,
           customKeys,
-          secret,
           username: customKeys.authInfo.username,
         });
       });
@@ -384,45 +436,33 @@ class VaultClientClass {
   }
 
   serializeLoginInfo(loginInfo) {
-    return JSON.stringify(loginInfo);
+    return serializeLoginInfo(loginInfo);
   }
 
   deserializeLoginInfo(str) {
-    const strData = JSON.parse(str);
-    if (!Object.prototype.hasOwnProperty.call(strData, 'blob')) {
-      return strData;
-    }
-
-    const {
-      blob,
-      customKeys,
-      ...strDataRest
-    } = strData;
-
-    const blobObj = BlobObj.deserialize(blob);
-    const customKeysObj = CustomKeys.deserialize(customKeys);
-
-    return { blob: blobObj, customKeys: customKeysObj, ...strDataRest };
+    return deserializeLoginInfo(str);
   }
 
   blockAccount(username, loginInfo) {
     return this.unlockAccount(loginInfo)
-      .then((unlockedLoginInfo) => {
+      .then((secret) => {
+        const { blob } = loginInfo;
         const options = {
-          url: unlockedLoginInfo.blob.url,
-          blob_id: unlockedLoginInfo.blob.id,
-          username: username,
-          account_id: unlockedLoginInfo.blob.data.account_id,
-          masterkey: unlockedLoginInfo.secret,
+          url: blob.url,
+          blob_id: blob.id,
+          username,
+          account_id: blob.data.account_id,
+          masterkey: secret,
         };
         return this.client.blockAccount(options)
           .then((result) => {
-            return Promise.resolve({ ...result, loginInfo: unlockedLoginInfo });
+            return Promise.resolve({ ...result, loginInfo: loginInfo });
           });
       });    
   }
+
   uploadPhotos(loginInfo, formData, config){
-    const newLoginInfo = this.deserializeLoginInfo(this.serializeLoginInfo(loginInfo));
+    const newLoginInfo = cloneLoginInfo(loginInfo);
     let url = `${loginInfo.blob.url}/v1/blob/${loginInfo.blob.id}/uploadId`;
     return post(url, formData, config)
       .then((resp) => {
@@ -441,16 +481,13 @@ class VaultClientClass {
 
   addBankAccount(loginInfo, bankAccountInfo, updateBlobDataCallback) {
     return this.unlockAccount(loginInfo)
-      .then((unlockedLoginInfo) => {
-        if (unlockedLoginInfo === loginInfo) {
-          console.log('add bank account: new login info');
-        }
+      .then((secret) => {
+        const newLoginInfo = cloneLoginInfo(loginInfo);
 
-        const newLoginInfo = unlockedLoginInfo === loginInfo ? this.deserializeLoginInfo(this.serializeLoginInfo(loginInfo)) : unlockedLoginInfo;
         updateBlobDataCallback(newLoginInfo.blob.data);
 
         const options = {
-          masterkey: newLoginInfo.secret,
+          masterkey: secret,
           blob: newLoginInfo.blob,
           bankAccountInfo,
         };
@@ -464,16 +501,12 @@ class VaultClientClass {
 
   deleteBankAccount(loginInfo, bankAccountInfo, updateBlobDataCallback) {
     return this.unlockAccount(loginInfo)
-      .then((unlockedLoginInfo) => {
-        if (unlockedLoginInfo === loginInfo) {
-          console.log('delete bank account: new login info');
-        }
-
-        const newLoginInfo = unlockedLoginInfo === loginInfo ? this.deserializeLoginInfo(this.serializeLoginInfo(loginInfo)) : unlockedLoginInfo;
+      .then((secret) => {
+        const newLoginInfo = cloneLoginInfo(loginInfo);
         updateBlobDataCallback(newLoginInfo.blob.data);
 
         const options = {
-          masterkey: newLoginInfo.secret,
+          masterkey: secret,
           blob: newLoginInfo.blob,
           bankAccountInfo,
         };
