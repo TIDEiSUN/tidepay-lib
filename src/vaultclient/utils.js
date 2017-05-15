@@ -7,18 +7,6 @@ export default {
     return `@@@RecoveR!!!!!${email}!!`;
   },
 
-  createHashedPhone(phone) {
-    const phoneStr = `(${phone.countryCode})${phone.phoneNumber}`;
-    const hashedBitArray = sjcl.hash.sha256.hash(phoneStr);
-    return sjcl.codec.hex.fromBits(hashedBitArray);
-  },
-
-  createHashedBankAccount(bankAccountInfo) {
-    const infoStr = JSON.stringify(bankAccountInfo);
-    const hashedBitArray = sjcl.hash.sha256.hash(infoStr);
-    return sjcl.codec.hex.fromBits(hashedBitArray);
-  },
-
   maskphone(phone) {
     if (!phone) {
       return '';

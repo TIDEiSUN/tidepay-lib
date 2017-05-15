@@ -502,15 +502,12 @@ export default {
    */
 
   addBankAccount(opts) {
-    const hashedBankAccount = Utils.createHashedBankAccount(opts.bankAccountInfo);
-
     const config = {
       method: 'POST',
       url: `${opts.blob.url}/v1/blob/${opts.blob.id}/bankaccount`,
       data: {
         data     : opts.blob.encrypt(),
         revision : opts.blob.revision,
-        hashed_bank_account: hashedBankAccount,
         bank_account_info: opts.bankAccountInfo,
       },
     };
@@ -540,15 +537,13 @@ export default {
    */
 
   deleteBankAccount(opts) {
-    const hashedBankAccount = Utils.createHashedBankAccount(opts.bankAccountInfo);
-
     const config = {
       method: 'DELETE',
       url: `${opts.blob.url}/v1/blob/${opts.blob.id}/bankaccount`,
       data: {
         data     : opts.blob.encrypt(),
         revision : opts.blob.revision,
-        hashed_bank_account: hashedBankAccount,
+        bank_account_info: opts.bankAccountInfo,
       },
     };
 
