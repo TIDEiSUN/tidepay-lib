@@ -101,6 +101,21 @@ export default class TidePayAPIClass {
       });
   }
 
+  getTransactionDetail(tx_hash){
+    return this.getDataApiUrl().
+    then((data_apiURL)=>{
+      const url=`${data_apiURL}/transactions/${tx_hash}`
+
+      return fetch(url).
+      then((resp)=>{
+          return Utils.handleFetchResponse(resp);
+      })
+      .catch((err) => {
+          return Utils.handleFetchError(err, 'getTransactionsDetail');
+      });
+    })
+  }
+
   getAccountTransactions(myAddress, options = {}) {
     return this.getDataApiUrl()
       .then((data_apiURL) => {
