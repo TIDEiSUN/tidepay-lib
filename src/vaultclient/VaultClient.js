@@ -517,11 +517,15 @@ class VaultClientClass {
       });
   }
 
-  getBlob(token) {
-    const dummyUsername = 'dummy';
-    return this.client.getByUsername(dummyUsername)
-      .then((authInfo) => {
-        return this.client.getBlob(authInfo.blobvault, token);
+  getBlob(loginToken, authInfo) {
+    return this.client.getBlob(authInfo.blobvault, loginToken);
+  }
+
+  getLoginInfo(loginToken, customKeys) {
+    return this.getBlob(loginToken, customKeys.authInfo)
+      .then((result) => {
+        const { blob } = result;
+        return this.handleLogin(blob, customKeys);
       });
   }
 }
