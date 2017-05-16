@@ -17,6 +17,8 @@ export default class BlobVaultAPI {
    */
 
   getByUsername(username) {
+    console.log('getByUsername', username)
+    
     return AuthInfo.getAuthInfo(this.isunpayrpcURL, { username });
   }
 
@@ -37,6 +39,7 @@ export default class BlobVaultAPI {
    */
   getAuthInfo(username) {
     return this.getByUsername(username).then((authInfo) => {
+      console.log('authInfo', authInfo)
       if (authInfo.version !== 3) {
         return Promise.reject(new Error('This wallet is incompatible with this version of the vault-client.'));
       }

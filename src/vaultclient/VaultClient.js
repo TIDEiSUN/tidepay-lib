@@ -221,14 +221,25 @@ class VaultClientClass {
 
   createAndDeriveCustomKeys(username, password, inAuthInfo = null) {
     const authInfoPromise = inAuthInfo ? Promise.resolve(inAuthInfo) : this.client.getAuthInfo(username);
+    
     return authInfoPromise
     .then((authInfo) => {
+      
+      
       if (!authInfo.exists) {
         return Promise.reject(new Error('User does not exists.'));
       }
       const customKeys = new CustomKeys(authInfo, password);
-      return customKeys.deriveKeys(password);
-    });
+      
+      return customKeys.deriveKeys(password).then((result)=>{
+        
+        
+        return Promise.resolve(result);
+
+      })
+     
+      
+    })
   }
 
   handleLogin(resp, customKeys) {

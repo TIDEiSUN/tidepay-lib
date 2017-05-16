@@ -2,6 +2,7 @@ import sjcl from './sjcl';
 import { Seed } from './ripple-npm/seed';
 import extend from 'extend';
 import jacobi from './sjcl-custom/sjcl-jacobi.js';
+import Utils from './utils';
 
 const SJCL_PARANOIA_256_BITS = 6;
 const cryptConfig = {
@@ -134,7 +135,8 @@ const Crypt = {
       if (resp.status !== 200) {
         return Promise.reject(new Error(`PAKDF server returns ${resp.statusText}` ));
       }
-      return resp.json();
+      
+      return Utils.handleFetchResponse(resp)
     })
     .then((data) => {
       var iSignres = new sjcl.bn(String(data.signres));
@@ -146,7 +148,7 @@ const Crypt = {
       tokens.forEach(function(token) {
         result[token] = keyHash(key, token);
       });
-
+      
       return Promise.resolve(result);
     })
     .catch((err) => {

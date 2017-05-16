@@ -1,10 +1,14 @@
+import Utils from './utils';
 export default {
   getAuthInfo(domain, queryString) {
+   
     return fetch(domain + '/tidepayurl')
       .then((res) => {
-        return res.json();
+       
+        return Utils.handleFetchResponse(res);
       })
       .then((value) => {
+        
         if (!value.authinfo) {
           return Promise.reject(new Error(`Authentication is not supported on ${domain}`));
         }
@@ -20,10 +24,12 @@ export default {
         if (qs !== '?') {
           url += qs;
         }
+       
         return fetch(url);
       })
       .then((resp) => {
-        return resp.json();
+       
+        return  Utils.handleFetchResponse(resp)
       })
   }
 };
