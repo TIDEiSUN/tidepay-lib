@@ -86,6 +86,14 @@ function deserializeLoginInfo(str) {
   return { blob: blobObj, customKeys: customKeysObj, ...strDataRest };
 }
 
+function serializeCustomKeys(customKeys) {
+  return JSON.stringify(customKeys);
+}
+
+function deserializeCustomKeys(str) {
+  return CustomKeys.deserialize(JSON.parse(str));
+}
+
 function cloneLoginInfo(loginInfo) {
   return deserializeLoginInfo(serializeLoginInfo(loginInfo));
 }
@@ -452,6 +460,14 @@ class VaultClientClass {
 
   deserializeLoginInfo(str) {
     return deserializeLoginInfo(str);
+  }
+
+  serializeCustomKeys(customKeys) {
+    return serializeCustomKeys(customKeys);
+  }
+
+  deserializeCustomKeys(str) {
+    return deserializeCustomKeys(str);
   }
 
   blockAccount(username, loginInfo) {
