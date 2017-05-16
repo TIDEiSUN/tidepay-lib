@@ -35,6 +35,7 @@ export default {
     if (resp.status < 200 || resp.status > 299) {
       const contentType = resp.headers.get('content-type');
       if (contentType && contentType.indexOf('application/json') !== -1) {
+         setTimeout(() => null, 0);
         return resp.json().then((err) => {
           const { code, message, ...info } = err;
           return Promise.reject(new Errors.FetchError(resp.status, message, code, info));
@@ -42,6 +43,7 @@ export default {
       }
       return Promise.reject(new Errors.FetchError(resp.status, resp.statusText));
     }
+     setTimeout(() => null, 0);
     return resp.json();
   },
 

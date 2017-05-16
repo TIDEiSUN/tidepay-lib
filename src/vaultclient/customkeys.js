@@ -53,14 +53,22 @@ export default class CustomKeys {
     return crypt.derive(this.authInfo.pakdf, 'unlock', normalizedUsername, password)
       .then((keys) => {
         console.log('deriveUnlockKey: derived new');
+         
         this.unlock = keys.unlock;
+       
         return Promise.resolve(this);
       });
   }
 
   deriveKeys(password) {
     return this.deriveLoginKeys(password)
-      .then(() => this.deriveUnlockKey(password));
+      .then(() => {
+        
+        return this.deriveUnlockKey(password)}).then((result)=>{
+        console.log('deriveKeysyo', result)
+       
+        return result
+      });
   }
 
   /**
