@@ -135,6 +135,7 @@ export default {
         data     : opts.blob.encrypt(),
         revision : opts.blob.revision,
       },
+      authorization: opts.loginToken,
     };
 
     const signedRequest = new SignedRequest(config);
@@ -182,6 +183,7 @@ export default {
         encrypted_blobdecrypt_key : BlobObj.encryptBlobCrypt(recoveryKey, opts.keys.crypt),
         encrypted_secretdecrypt_key : BlobObj.encryptBlobCrypt(recoveryKey, opts.keys.unlock),
       },
+      authorization: opts.loginToken,
     };
 
     const signedRequest = new SignedRequest(config);
@@ -265,7 +267,7 @@ export default {
         email,
         emailToken,
         authToken,
-      }
+      },
     });
     const url = `${opts.url}/v1/user/${username}/auth/verify`;
     return fetch(url, config)
@@ -285,6 +287,7 @@ export default {
       method: 'POST',
       url: `${opts.url}/v1/user/${opts.username}/updateEmailRequest`,
       data: opts.data,
+      authorization: opts.loginToken,
     };
 
     const signedRequest = new SignedRequest(config);
@@ -308,6 +311,7 @@ export default {
       method: 'POST',
       url: `${opts.url}/v1/user/${opts.username}/updateEmailVerify`,
       data: opts.data,
+      authorization: opts.loginToken,
     };
 
     const signedRequest = new SignedRequest(config);
@@ -331,6 +335,7 @@ export default {
       method : 'POST',
       url    : `${opts.url}/v1/user/${opts.username}/updatePhoneRequest`,
       data   : opts.data,
+      authorization: opts.loginToken,
     };
 
     const signedRequest = new SignedRequest(config);
@@ -354,6 +359,7 @@ export default {
       method : 'POST',
       url    : `${opts.url}/v1/user/${opts.username}/updatePhoneVerify`,
       data   : opts.data,
+      authorization: opts.loginToken,
     };
 
     const signedRequest = new SignedRequest(config);
@@ -444,6 +450,7 @@ export default {
       const config = {
         method: 'DELETE',
         url: `${options.url}/v1/user/${options.username}`,
+        authorization: options.loginToken,
       };
 
       const signedRequest = new SignedRequest(config);
@@ -475,6 +482,7 @@ export default {
     const config = {
       method : 'POST',
       url    : `${opts.url}/v1/user/${opts.username}/block`,
+      authorization: opts.loginToken,
     };
 
     const signedRequest = new SignedRequest(config);
@@ -510,6 +518,7 @@ export default {
         revision : opts.blob.revision,
         bank_account_info: opts.bankAccountInfo,
       },
+      authorization: opts.loginToken,
     };
 
     const signedRequest = new SignedRequest(config);
@@ -545,6 +554,7 @@ export default {
         revision : opts.blob.revision,
         bank_account_info: opts.bankAccountInfo,
       },
+      authorization: opts.loginToken,
     };
 
     const signedRequest = new SignedRequest(config);
@@ -569,10 +579,11 @@ export default {
    */
 
   get2FA(opts) {
-    const { blob } = opts;
+    const { blob, loginToken } = opts;
     const config = {
       method : 'GET',
       url    : `${blob.url}/v1/blob/${blob.id}/2fa`,
+      authorization: loginToken,
     };
     if (blob.device_id) {
       config.url += `?device_id=${blob.device_id}`;
@@ -580,7 +591,8 @@ export default {
 
     const signedRequest = new SignedRequest(config);
     const signed = signedRequest.signHmac(blob.data.auth_secret, blob.id);
-    return fetch(signed.url, { method: 'GET' })
+    const options = Utils.makeFetchRequestOptions(config);
+    return fetch(signed.url, options)
     .then((resp) => {
       return Utils.handleFetchResponse(resp);
     })
@@ -611,6 +623,7 @@ export default {
         phoneNumber : opts.phoneNumber,
         countryCode : opts.countryCode,
       },
+      authorization: opts.loginToken,
     };
 
     const signedRequest = new SignedRequest(config);
@@ -633,6 +646,7 @@ export default {
     const config = {
       method: 'POST',
       data: opts.formData,
+      authorization: opts.loginToken,
     };
     const options = Utils.makeFetchRequestOptions(config); 
     const url = `${opts.blob.url}/v1/blob/${opts.blob.id}/uploadId`;
