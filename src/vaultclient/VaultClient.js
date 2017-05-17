@@ -119,9 +119,9 @@ class VaultClientClass {
     this.writeCustomKeysCb = callbacks.writeCustomKeys;
   }
 
-  getLoginToken(options = null) {
+  getLoginToken(options) {
     const token = this.readLoginTokenCb();
-    return options ? { ...options, loginToken: token } : token;
+    return { ...options, loginToken: token };
   }
 
   setLoginToken(result) {
@@ -593,17 +593,11 @@ class VaultClientClass {
       });
   }
 
-  // TODO remove unused parameters
-  getBlob(unusedLoginToken, authInfo) {
-    const loginToken = this.getLoginToken();
-    return this.client.getBlob(authInfo.blobvault, loginToken)
-      .then(result => this.setLoginToken(result));
-  }
-
-  // TODO remove unused parameters
-  getLoginInfo(unusedLoginToken, unusedCustomKeys) {
+  getLoginInfo() {
     const customKeys = this.readCustomKeysCb();
-    return this.getBlob(unusedLoginToken, customKeys.authInfo)
+    const loginToken = this.readLoginTokenCb();
+    return this.client.getBlob(customKeys.authInfo.blobvault, loginToken)
+      .then(result => this.setLoginToken(result))
       .then((result) => {
         const { blob } = result;
 
