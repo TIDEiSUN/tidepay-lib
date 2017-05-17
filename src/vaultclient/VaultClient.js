@@ -1,4 +1,3 @@
-import { post } from 'axios';
 import BlobVaultAPI from './BlobVaultAPI';
 import Errors from './Errors'
 import Utils from './utils';
@@ -197,7 +196,10 @@ class VaultClientClass {
   }
 
   get2FAInfo(loginInfo) {
-    return BlobAPI.get2FA(loginInfo.blob);
+    const options = this.readLoginToken({
+      blob: loginInfo.blob,
+    });
+    return BlobAPI.get2FA(options);
   }
 
   set2FAInfo(loginInfo, enable, phone) {
@@ -223,31 +225,20 @@ class VaultClientClass {
       url: authInfo.blobvault,
       data,
     };
-    console.log('authlogin info', options)
+    console.log('authlogin info', options);
     return this.client.authLogin(options);
   }
 
   createAndDeriveCustomKeys(username, password, inAuthInfo = null) {
     const authInfoPromise = inAuthInfo ? Promise.resolve(inAuthInfo) : this.client.getAuthInfo(username);
-    
     return authInfoPromise
     .then((authInfo) => {
-      
-      
       if (!authInfo.exists) {
         return Promise.reject(new Error('User does not exists.'));
       }
       const customKeys = new CustomKeys(authInfo, password);
-      
-      return customKeys.deriveKeys(password).then((result)=>{
-        
-        
-        return Promise.resolve(result);
-
-      })
-     
-      
-    })
+      return customKeys.deriveKeys(password);
+    });
   }
 
   handleLogin(resp, customKeys) {
@@ -488,21 +479,16 @@ class VaultClientClass {
       });    
   }
 
-  uploadPhotos(loginInfo, formData, config){
-    const newLoginInfo = cloneLoginInfo(loginInfo);
-    let url = `${loginInfo.blob.url}/v1/blob/${loginInfo.blob.id}/uploadId`;
-    return post(url, formData, config)
+  uploadPhotos(loginInfo, formData) {
+    const options = {
+      blob: loginInfo.blob,
+      formData,
+    };
+    return this.client.uploadPhotos(options)
       .then((resp) => {
-        newLoginInfo.blob.id_photos = resp.data.id_photos;
+        const newLoginInfo = cloneLoginInfo(loginInfo);
+        newLoginInfo.blob.id_photos = resp.id_photos;
         return Promise.resolve({ loginInfo: newLoginInfo });
-      })
-      .catch((err) => {
-        if (err.response) {
-          const body = err.response.data;
-          return Promise.reject(new Error(`${body.code} - ${body.message}`));
-        } else {
-          return Promise.reject(err);
-        }
       });
   }
 

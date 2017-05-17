@@ -11,11 +11,10 @@ export default {
   getBlob(url, token) {
     const config = {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      },
+      authorization: token,
     };
-    return fetch(`${url}/v1/blob`, config)
+    const gconfig = Utils.makeFetchRequestOptions(config);
+    return fetch(`${url}/v1/blob`, gconfig)
     .then((resp) => {
       return Utils.handleFetchResponse(resp);
     })
@@ -480,8 +479,9 @@ export default {
 
     const signedRequest = new SignedRequest(config);
     const signed = signedRequest.signAsymmetric(opts.masterkey, opts.account_id, opts.blob_id);
+    const options = Utils.makeFetchRequestOptions(config);
 
-    return fetch(signed.url, { method: 'POST' })
+    return fetch(signed.url, options)
     .then((resp) => {
       return Utils.handleFetchResponse(resp);
     })
@@ -568,7 +568,8 @@ export default {
    * get2FA - HMAC signed request
    */
 
-  get2FA(blob) {
+  get2FA(opts) {
+    const { blob } = opts;
     const config = {
       method : 'GET',
       url    : `${blob.url}/v1/blob/${blob.id}/2fa`,
@@ -626,5 +627,24 @@ export default {
     .catch((err) => {
       return Utils.handleFetchError(err, 'set2FA');
     })
-  }  
+  },
+
+  uploadPhotos(opts) {
+    const config = {
+      method: 'POST',
+      data: opts.formData,
+    };
+    const options = Utils.makeFetchRequestOptions(config); 
+    const url = `${opts.blob.url}/v1/blob/${opts.blob.id}/uploadId`;
+    return fetch(url, options)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((data) => {
+        return Promise.resolve(data);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'uploadPhotos');
+      });
+  },
 };
