@@ -607,6 +607,9 @@ class VaultClientClass {
   getLoginInfo() {
     const customKeys = this.readCustomKeysCb();
     const loginToken = this.readLoginTokenCb();
+    if (!customKeys || !loginToken) {
+      return Promise.reject(new Error('No login token or keys'));
+    }
     return this.client.getBlob(customKeys.authInfo.blobvault, loginToken)
       .then(result => this.setLoginToken(result))
       .then((result) => {
@@ -626,6 +629,11 @@ class VaultClientClass {
           customKeys,
           username: customKeys.authInfo.username,
         });
+      })
+      .catch((err) => {
+        this.writeLoginTokenCb(null);
+        this.writeCustomKeysCb(null);
+        return Promise.reject(err);
       });
   }
 }
