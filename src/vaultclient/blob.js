@@ -661,4 +661,27 @@ export default {
         return Utils.handleFetchError(err, 'uploadPhotos');
       });
   },
+
+  logoutAccount(opts) {
+    const { blob, loginToken, masterkey } = opts;
+    const config = {
+      method: 'POST',
+      url: `${blob.url}/v1/user/auth/logout`,
+      authorization: loginToken,
+    };
+    const signedRequest = new SignedRequest(config);
+    const signed = signedRequest.signAsymmetric(masterkey, blob.data.account_id, blob.id);
+    const options = Utils.makeFetchRequestOptions(config);
+
+    return fetch(signed.url, options)
+    .then((resp) => {
+      return Utils.handleFetchResponse(resp);
+    })
+    .then((data) => {
+      return Promise.resolve(data);
+    })
+    .catch((err) => {
+      return Utils.handleFetchError(err, 'logoutAccount');
+    })
+  }
 };

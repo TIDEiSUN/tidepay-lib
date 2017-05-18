@@ -126,7 +126,7 @@ class VaultClientClass {
 
   setLoginToken(result) {
     const { loginToken, ...rest } = result;
-    if (loginToken) {
+    if (loginToken !== undefined) {
       this.writeLoginTokenCb(loginToken);
     }
     return rest;
@@ -136,7 +136,7 @@ class VaultClientClass {
     const { result } = resp;
     if (result) {
       const { loginToken } = result;
-      if (loginToken) {
+      if (loginToken !== undefined) {
         this.writeLoginTokenCb(loginToken);
       }
     }
@@ -276,9 +276,20 @@ class VaultClientClass {
       .then(resp => this.setAuthLoginToken(resp));
   }
 
-  logoutAccount() {
-    this.writeLoginTokenCb(null);
-    this.writeCustomKeysCb(null);
+  logoutAccount(loginInfo) {
+    return this.unlockAccount(loginInfo)
+      .then((secret) => {
+        const options = this.getLoginToken({
+          blob: loginInfo.blob,
+          masterkey: secret,
+        });
+        return this.client.logoutAccount(options);
+      })
+      .then(result => this.setLoginToken(result))
+      .then((result) => {
+        this.writeCustomKeysCb(null);
+        return result;
+      });
   }
 
   createAndDeriveCustomKeys(username, password, inAuthInfo = null) {
@@ -535,8 +546,8 @@ class VaultClientClass {
           masterkey: secret,
         });
         return this.client.blockAccount(options)
+          .then(result => this.setLoginToken(result))
           .then((result) => {
-            this.writeLoginTokenCb(null);
             this.writeCustomKeysCb(null);
             return Promise.resolve({ ...result, loginInfo: loginInfo });
           });
