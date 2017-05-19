@@ -290,6 +290,11 @@ class VaultClientClass {
       .then((result) => {
         this.writeCustomKeysCb(null);
         return result;
+      })
+      .catch((err) => {
+        this.writeLoginTokenCb(null);
+        this.writeCustomKeysCb(null);
+        return Promise.reject(err);
       });
   }
 
@@ -550,7 +555,12 @@ class VaultClientClass {
           .then(result => this.setLoginToken(result))
           .then((result) => {
             this.writeCustomKeysCb(null);
-            return Promise.resolve({ ...result, loginInfo: loginInfo });
+            return Promise.resolve({ ...result, loginInfo: null });
+          })
+          .catch((err) => {
+            this.writeLoginTokenCb(null);
+            this.writeCustomKeysCb(null);
+            return Promise.reject(err);
           });
       });
   }

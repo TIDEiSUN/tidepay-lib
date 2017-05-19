@@ -20,14 +20,14 @@ export default {
     })
     .then((data) => {
       return Promise.resolve(data);
-    }) 
+    })
     .catch((err) => {
       return Utils.handleFetchError(err, 'getBlob');
     });
   },
 
   authLogin(opts) {
-    const config = Utils.makeFetchRequestOptions( { method : 'POST', data : opts.data } );
+    const config = Utils.makeFetchRequestOptions({ method: 'POST', data: opts.data });
     const url = `${opts.url}/v1/user/auth/login`;
     return fetch(url, config)
     .then((resp) => {
@@ -35,14 +35,14 @@ export default {
     })
     .then((data) => {
       return Promise.resolve(data);
-    }) 
+    })
     .catch((err) => {
       return Utils.handleFetchError(err, 'authLogin');
     });
   },
 
   authUnblockAccount(opts) {
-    const config = Utils.makeFetchRequestOptions( { method : 'POST', data : opts.data } );
+    const config = Utils.makeFetchRequestOptions({ method: 'POST', data: opts.data });
     const url = `${opts.url}/v1/user/auth/unblock`;
     return fetch(url, config)
     .then((resp) => {
@@ -50,14 +50,14 @@ export default {
     })
     .then((data) => {
       return Promise.resolve(data);
-    }) 
+    })
     .catch((err) => {
       return Utils.handleFetchError(err, 'authUnblockAccount');
     });
   },
 
   authRecoverAccount(opts) {
-    const config = Utils.makeFetchRequestOptions( { method : 'POST', data : opts.data } );
+    const config = Utils.makeFetchRequestOptions({ method: 'POST', data: opts.data });
     const url = `${opts.url}/v1/user/auth/recover`;
     return fetch(url, config)
     .then((resp) => {
@@ -65,7 +65,7 @@ export default {
     })
     .then((data) => {
       return Promise.resolve(data);
-    }) 
+    })
     .catch((err) => {
       return Utils.handleFetchError(err, 'authRecoverAccount');
     });
@@ -83,7 +83,7 @@ export default {
         encrypted_blobdecrypt_key,
         encrypted_secretdecrypt_key,
         username,
-        ...respRest,
+        ...respRest
       } = resp;
 
       const params = {
@@ -138,20 +138,24 @@ export default {
       authorization: opts.loginToken,
     };
 
-    const signedRequest = new SignedRequest(config);
-    const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, opts.blob.id);
-    const options = Utils.makeFetchRequestOptions(config);
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, opts.blob.id);
+      const options = Utils.makeFetchRequestOptions(config);
 
-    return fetch(signed.url, options)
-    .then((resp) => {
-      return Utils.handleFetchResponse(resp);
-    })
-    .then((data) => {
-      return Promise.resolve(data);
-    })
-    .catch((err) => {
-      return Utils.handleFetchError(err, 'updateBlob');
-    })
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((data) => {
+        return Promise.resolve(data);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'updateBlob');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
   },
 
   /**
@@ -186,20 +190,24 @@ export default {
       authorization: opts.loginToken,
     };
 
-    const signedRequest = new SignedRequest(config);
-    const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, old_id);
-    const options = Utils.makeFetchRequestOptions(config);
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, old_id);
+      const options = Utils.makeFetchRequestOptions(config);
 
-    return fetch(signed.url, options)
-    .then((resp) => {
-      return Utils.handleFetchResponse(resp);
-    })
-    .then((data) => {
-      return Promise.resolve(data);
-    })
-    .catch((err) => {
-      return Utils.handleFetchError(err, 'updateKeys');
-    })
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((data) => {
+        return Promise.resolve(data);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'updateKeys');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
   },
 
   /**
@@ -243,26 +251,30 @@ export default {
       },
     };
 
-    const signedRequest = new SignedRequest(config);
-    const signed = signedRequest.signAsymmetric(masterkey, address, keys.id);
-    const options = Utils.makeFetchRequestOptions(config);
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signAsymmetric(masterkey, address, keys.id);
+      const options = Utils.makeFetchRequestOptions(config);
 
-    return fetch(signed.url, options)
-    .then((resp) => {
-      return Utils.handleFetchResponse(resp);
-    })
-    .then((data) => {
-      return Promise.resolve({...data, newBlobData: blob.data, encrypted_secret: blob.encrypted_secret });
-    })
-    .catch((err) => {
-      return Utils.handleFetchError(err, 'authActivateAccount');
-    })
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((data) => {
+        return Promise.resolve({ ...data, newBlobData: blob.data, encrypted_secret: blob.encrypted_secret });
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'authActivateAccount');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
   },
 
   authVerifyAccountEmailToken(opts) {
     const { email, emailToken, username, authToken } = opts;
     const config = Utils.makeFetchRequestOptions({
-      method : 'POST',
+      method: 'POST',
       data: {
         email,
         emailToken,
@@ -276,7 +288,7 @@ export default {
     })
     .then((data) => {
       return Promise.resolve(data);
-    }) 
+    })
     .catch((err) => {
       return Utils.handleFetchError(err, 'authVerifyAccountEmailToken');
     });
@@ -290,20 +302,24 @@ export default {
       authorization: opts.loginToken,
     };
 
-    const signedRequest = new SignedRequest(config);
-    const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, opts.blob.id);
-    const options = Utils.makeFetchRequestOptions(config);
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, opts.blob.id);
+      const options = Utils.makeFetchRequestOptions(config);
 
-    return fetch(signed.url, options)
-    .then((resp) => {
-      return Utils.handleFetchResponse(resp);
-    })
-    .then((data) => {
-      return Promise.resolve(data);
-    }) 
-    .catch((err) => {
-      return Utils.handleFetchError(err, 'authRequestUpdateEmail');
-    });
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((data) => {
+        return Promise.resolve(data);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'authRequestUpdateEmail');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
   },
 
   authVerifyUpdateEmail(opts) {
@@ -314,68 +330,80 @@ export default {
       authorization: opts.loginToken,
     };
 
-    const signedRequest = new SignedRequest(config);
-    const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, opts.blob.id);
-    const options = Utils.makeFetchRequestOptions(config);
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, opts.blob.id);
+      const options = Utils.makeFetchRequestOptions(config);
 
-    return fetch(signed.url, options)
-    .then((resp) => {
-      return Utils.handleFetchResponse(resp);
-    })
-    .then((data) => {
-      return Promise.resolve(data);
-    }) 
-    .catch((err) => {
-      return Utils.handleFetchError(err, 'authVerifyUpdateEmail');
-    });
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((data) => {
+        return Promise.resolve(data);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'authVerifyUpdateEmail');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
   },
 
   authRequestUpdatePhone(opts) {
-    const config   = {
+    const config = {
       method : 'POST',
       url    : `${opts.url}/v1/user/${opts.username}/updatePhoneRequest`,
       data   : opts.data,
       authorization: opts.loginToken,
     };
 
-    const signedRequest = new SignedRequest(config);
-    const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, opts.blob.id);
-    const options = Utils.makeFetchRequestOptions(config);
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, opts.blob.id);
+      const options = Utils.makeFetchRequestOptions(config);
 
-    return fetch(signed.url, options)
-    .then((resp) => {
-      return Utils.handleFetchResponse(resp);
-    })
-    .then((data) => {
-      return Promise.resolve(data);
-    })
-    .catch((err) => {
-      return Utils.handleFetchError(err, 'authRequestUpdatePhone');
-    })
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((data) => {
+        return Promise.resolve(data);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'authRequestUpdatePhone');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
   },
 
   authVerifyUpdatePhone(opts) {
-    const config   = {
+    const config = {
       method : 'POST',
       url    : `${opts.url}/v1/user/${opts.username}/updatePhoneVerify`,
       data   : opts.data,
       authorization: opts.loginToken,
     };
 
-    const signedRequest = new SignedRequest(config);
-    const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, opts.blob.id);
-    const options = Utils.makeFetchRequestOptions(config);
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, opts.blob.id);
+      const options = Utils.makeFetchRequestOptions(config);
 
-    return fetch(signed.url, options)
-    .then((resp) => {
-      return Utils.handleFetchResponse(resp);
-    })
-    .then((data) => {
-      return Promise.resolve(data);
-    })
-    .catch((err) => {
-      return Utils.handleFetchError(err, 'authVerifyUpdatePhone');
-    })
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((data) => {
+        return Promise.resolve(data);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'authVerifyUpdatePhone');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
   },
 
   /**
@@ -433,7 +461,7 @@ export default {
     })
     .catch((err) => {
       return Utils.handleFetchError(err, 'authCreate');
-    })
+    });
   },
 
   /**
@@ -447,15 +475,16 @@ export default {
    */
 
   deleteBlob(options) {
-      const config = {
-        method: 'DELETE',
-        url: `${options.url}/v1/user/${options.username}`,
-        authorization: options.loginToken,
-      };
+    const config = {
+      method: 'DELETE',
+      url: `${options.url}/v1/user/${options.username}`,
+      authorization: options.loginToken,
+    };
 
+    try {
       const signedRequest = new SignedRequest(config);
       const signed = signedRequest.signAsymmetric(options.masterkey, options.account_id, options.blob_id);
-      
+
       return fetch(signed.url, { method: 'DELETE' })
       .then((resp) => {
         return Utils.handleFetchResponse(resp);
@@ -465,7 +494,10 @@ export default {
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'deleteBlob');
-      })
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
   },
 
   /**
@@ -485,20 +517,24 @@ export default {
       authorization: opts.loginToken,
     };
 
-    const signedRequest = new SignedRequest(config);
-    const signed = signedRequest.signAsymmetric(opts.masterkey, opts.account_id, opts.blob_id);
-    const options = Utils.makeFetchRequestOptions(config);
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signAsymmetric(opts.masterkey, opts.account_id, opts.blob_id);
+      const options = Utils.makeFetchRequestOptions(config);
 
-    return fetch(signed.url, options)
-    .then((resp) => {
-      return Utils.handleFetchResponse(resp);
-    })
-    .then((data) => {
-      return Promise.resolve(data);
-    })
-    .catch((err) => {
-      return Utils.handleFetchError(err, 'blockAccount');
-    })
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((data) => {
+        return Promise.resolve(data);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'blockAccount');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
   },
 
   /**
@@ -521,20 +557,24 @@ export default {
       authorization: opts.loginToken,
     };
 
-    const signedRequest = new SignedRequest(config);
-    const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, opts.blob.id);
-    const options = Utils.makeFetchRequestOptions(config);
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, opts.blob.id);
+      const options = Utils.makeFetchRequestOptions(config);
 
-    return fetch(signed.url, options)
-    .then((resp) => {
-      return Utils.handleFetchResponse(resp);
-    })
-    .then((data) => {
-      return Promise.resolve(data);
-    })
-    .catch((err) => {
-      return Utils.handleFetchError(err, 'addBankAccount');
-    })
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((data) => {
+        return Promise.resolve(data);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'addBankAccount');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
   },
 
   /**
@@ -557,20 +597,24 @@ export default {
       authorization: opts.loginToken,
     };
 
-    const signedRequest = new SignedRequest(config);
-    const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, opts.blob.id);
-    const options = Utils.makeFetchRequestOptions(config);
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, opts.blob.id);
+      const options = Utils.makeFetchRequestOptions(config);
 
-    return fetch(signed.url, options)
-    .then((resp) => {
-      return Utils.handleFetchResponse(resp);
-    })
-    .then((data) => {
-      return Promise.resolve(data);
-    })
-    .catch((err) => {
-      return Utils.handleFetchError(err, 'deleteBankAccount');
-    })
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((data) => {
+        return Promise.resolve(data);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'deleteBankAccount');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
   },
 
 
@@ -589,19 +633,23 @@ export default {
       config.url += `?device_id=${blob.device_id}`;
     }
 
-    const signedRequest = new SignedRequest(config);
-    const signed = signedRequest.signHmac(blob.data.auth_secret, blob.id);
-    const options = Utils.makeFetchRequestOptions(config);
-    return fetch(signed.url, options)
-    .then((resp) => {
-      return Utils.handleFetchResponse(resp);
-    })
-    .then((data) => {
-      return Promise.resolve(data);
-    }) 
-    .catch((err) => {
-      return Utils.handleFetchError(err, 'get2FA');
-    });
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signHmac(blob.data.auth_secret, blob.id);
+      const options = Utils.makeFetchRequestOptions(config);
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((data) => {
+        return Promise.resolve(data);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'get2FA');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
   },
 
   /**
@@ -626,20 +674,24 @@ export default {
       authorization: opts.loginToken,
     };
 
-    const signedRequest = new SignedRequest(config);
-    const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, opts.blob.id);
-    const options = Utils.makeFetchRequestOptions(config);
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, opts.blob.id);
+      const options = Utils.makeFetchRequestOptions(config);
 
-    return fetch(signed.url, options)
-    .then((resp) => {
-      return Utils.handleFetchResponse(resp);
-    })
-    .then((data) => {
-      return Promise.resolve(data);
-    })
-    .catch((err) => {
-      return Utils.handleFetchError(err, 'set2FA');
-    })
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((data) => {
+        return Promise.resolve(data);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'set2FA');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
   },
 
   uploadPhotos(opts) {
@@ -648,7 +700,7 @@ export default {
       data: opts.formData,
       authorization: opts.loginToken,
     };
-    const options = Utils.makeFetchRequestOptions(config); 
+    const options = Utils.makeFetchRequestOptions(config);
     const url = `${opts.blob.url}/v1/blob/${opts.blob.id}/uploadId`;
     return fetch(url, options)
       .then((resp) => {
@@ -669,19 +721,23 @@ export default {
       url: `${blob.url}/v1/user/auth/logout`,
       authorization: loginToken,
     };
-    const signedRequest = new SignedRequest(config);
-    const signed = signedRequest.signAsymmetric(masterkey, blob.data.account_id, blob.id);
-    const options = Utils.makeFetchRequestOptions(config);
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signAsymmetric(masterkey, blob.data.account_id, blob.id);
+      const options = Utils.makeFetchRequestOptions(config);
 
-    return fetch(signed.url, options)
-    .then((resp) => {
-      return Utils.handleFetchResponse(resp);
-    })
-    .then((data) => {
-      return Promise.resolve(data);
-    })
-    .catch((err) => {
-      return Utils.handleFetchError(err, 'logoutAccount');
-    })
-  }
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((data) => {
+        return Promise.resolve(data);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'logoutAccount');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
+  },
 };
