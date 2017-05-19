@@ -222,6 +222,7 @@ class VaultClientClass {
         const { result, loginToken, newBlobData, encrypted_secret } = resp;
         const resultLoginInfo = updateLoginInfo(loginInfo, result, newBlobData);
         resultLoginInfo.blob.encrypted_secret = encrypted_secret;
+        this.writeCustomKeysCb(resultLoginInfo.customKeys);
         return Promise.resolve({ loginInfo: resultLoginInfo, loginToken });
       });
   }
@@ -373,6 +374,7 @@ class VaultClientClass {
           .then((resp) => {
             const { result, ...restResp } = resp;
             const resultLoginInfo = updateLoginInfo(loginInfo, result);
+            this.writeCustomKeysCb(resultLoginInfo.customKeys);
             return Promise.resolve({ ...restResp, loginInfo: resultLoginInfo });
           });
       });
@@ -403,6 +405,7 @@ class VaultClientClass {
           .then((resp) => {
             const { result, ...restResp } = resp;
             const resultLoginInfo = updateLoginInfo(loginInfo, result);
+            this.writeCustomKeysCb(resultLoginInfo.customKeys);
             return Promise.resolve({ ...restResp, loginInfo: resultLoginInfo });
           });
       });
@@ -413,10 +416,6 @@ class VaultClientClass {
     // assume no function
     const newData = JSON.parse(JSON.stringify(data));
     return Object.assign(new BlobObj(), blob, { data: newData });
-  }
-
-  sumUpdateLoginInfo(loginInfo, result, newBlobData) {
-    return updateLoginInfo(loginInfo, result, newBlobData);
   }
 
   authRequestUpdatePhone(loginInfo, phone) {
@@ -444,6 +443,7 @@ class VaultClientClass {
       .then((resp) => {
         const { result, ...restResp } = resp;
         const resultLoginInfo = updateLoginInfo(loginInfo, result);
+        this.writeCustomKeysCb(resultLoginInfo.customKeys);
         return Promise.resolve({ ...restResp, loginInfo: resultLoginInfo });
       });
   }
@@ -477,6 +477,7 @@ class VaultClientClass {
       .then((resp) => {
         const { result, ...restResp } = resp;
         const resultLoginInfo = updateLoginInfo(loginInfo, result, newBlob.data);
+        this.writeCustomKeysCb(resultLoginInfo.customKeys);
         return Promise.resolve({ ...restResp, loginInfo: resultLoginInfo });
       });
   }
