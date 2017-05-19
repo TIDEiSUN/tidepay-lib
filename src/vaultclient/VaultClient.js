@@ -451,22 +451,22 @@ class VaultClientClass {
   authVerifyUpdatePhone(loginInfo, phone, phoneToken, authToken, newBlob) {
     const _authVerifyUpdatePhone = (blob, secret, username) => {
       const { phoneNumber, countryCode } = phone;
-      const data = this.getLoginToken({
+      const data = {
         countryCode,
         phoneNumber,
         phoneToken,
         authToken,
         data: newBlob.encrypt(),
         revision: newBlob.revision,
-      });
+      };
 
-      const options = {
+      const options = this.getLoginToken({
         url: blob.url,
         blob,
         masterkey: secret,
         username,
         data,
-      };
+      });
 
       return this.client.authVerifyUpdatePhone(options);
     };
