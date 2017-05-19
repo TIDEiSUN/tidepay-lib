@@ -299,3 +299,7 @@ BlobVaultAPI.prototype.getBlob = BlobAPI.getBlob;
 BlobVaultAPI.prototype.updateBlob = BlobAPI.updateBlob;
 
 BlobVaultAPI.prototype.changePassword = BlobAPI.updateKeys;
+
+BlobVaultAPI.prototype.uploadPhotos = BlobAPI.uploadPhotos;
+
+BlobVaultAPI.prototype.logoutAccount = BlobAPI.logoutAccount;

@@ -98,7 +98,7 @@ export default class BlobObj {
       quota,
       patches,
       locked,
-      ...bodyRest,
+      ...bodyRest
     } = inBlob;
 
     if (locked) {
@@ -148,20 +148,24 @@ export default class BlobObj {
       },
     };
 
-    const signedRequest = new SignedRequest(config);
-    const signed = signedRequest.signHmac(this.data.auth_secret, this.id);
-    const options = Utils.makeFetchRequestOptions(config);
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signHmac(this.data.auth_secret, this.id);
+      const options = Utils.makeFetchRequestOptions(config);
 
-    return fetch(signed.url, options)
-    .then((resp) => {
-      return Utils.handleFetchResponse(resp);
-    })
-    .then((data) => {
-      return Promise.resolve(data);
-    })
-    .catch((err) => {
-      return Utils.handleFetchError(err, 'consolidate');
-    })
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((data) => {
+        return Promise.resolve(data);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'consolidate');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
   }
 
   /**
@@ -223,7 +227,7 @@ export default class BlobObj {
       // TODO this is not needed once database is reset
       // remove the extra email field
       if (Object.prototype.hasOwnProperty.call(this.data, 'email')) {
-        console.log('email is found in blob.data')
+        console.log('email is found in blob.data');
         delete this.data.email;
       }
       return this;
@@ -488,20 +492,24 @@ export default class BlobObj {
       },
     };
 
-    const signedRequest = new SignedRequest(config);
-    const signed = signedRequest.signHmac(this.data.auth_secret, this.id);
-    const options = Utils.makeFetchRequestOptions(config);
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signHmac(this.data.auth_secret, this.id);
+      const options = Utils.makeFetchRequestOptions(config);
 
-    return fetch(signed.url, options)
-    .then((resp) => {
-      return Utils.handleFetchResponse(resp);
-    })
-    .then((data) => {
-      return Promise.resolve(data);
-    })
-    .catch((err) => {
-      return Utils.handleFetchError(err, 'postUpdate');
-    })
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((data) => {
+        return Promise.resolve(data);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'postUpdate');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
   }
 
   /***** helper functions *****/

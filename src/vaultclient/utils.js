@@ -22,12 +22,20 @@ export default {
 
   makeFetchRequestOptions(config) {
     const options = {
-      method : config.method,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body   : JSON.stringify(config.data),
+      method: config.method,
+      headers: {},
     };
+    if (config.data) {
+      if (config.data instanceof FormData) {
+        options.body = config.data;
+      } else {
+        options.body = JSON.stringify(config.data);
+        options.headers['Content-Type'] = 'application/json';
+      }
+    }
+    if (config.authorization) {
+      options.headers['Authorization'] = `Bearer ${config.authorization}`;
+    }
     return options;
   },
 
