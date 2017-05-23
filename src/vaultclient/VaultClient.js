@@ -120,16 +120,17 @@ class VaultClientClass {
   }
 
   getLoginToken(options) {
-    const token = this.readLoginTokenCb();
-    return { ...options, loginToken: token };
+    return this.readLoginTokenCb()
+      .then(token => Promise.resolve({ ...options, loginToken: token }));
   }
 
   setLoginToken(result) {
     const { loginToken, ...rest } = result;
     if (loginToken !== undefined) {
-      this.writeLoginTokenCb(loginToken);
+      return this.writeLoginTokenCb(loginToken)
+        .then(() => rest);
     }
-    return rest;
+    return Promise.resolve(rest);
   }
 
   setAuthLoginToken(resp) {
@@ -137,10 +138,11 @@ class VaultClientClass {
     if (result) {
       const { loginToken } = result;
       if (loginToken !== undefined) {
-        this.writeLoginTokenCb(loginToken);
+        return this.writeLoginTokenCb(loginToken)
+          .then(() => resp);
       }
     }
-    return resp;
+    return Promise.resolve(resp);
   }
 
   unlockAccount(loginInfo) {
@@ -151,16 +153,17 @@ class VaultClientClass {
 
   updateBlob(username, loginInfo, newBlob) {
     const _updateBlob = (secret, customKeys) => {
-      const options = this.getLoginToken({
+      return this.getLoginToken({
         username,
         masterkey: secret,
         blob: newBlob,
+      })
+      .then((options) => {
+        // TODO blob.key
+        const { authInfo } = customKeys;
+        return checkEmailVerified(authInfo)
+          .then(() => this.client.updateBlob(options));
       });
-
-      // TODO blob.key
-      const { authInfo } = customKeys;
-      return checkEmailVerified(authInfo)
-        .then(() => this.client.updateBlob(options));
     };
 
     return this.unlockAccount(loginInfo)
@@ -175,23 +178,23 @@ class VaultClientClass {
 
   changePassword(username, newPassword, loginInfo) {
     const _changePassword = (blob, secret, oldCustomKeys, newCustomKeys) => {
-      const options = this.getLoginToken({
+      return this.getLoginToken({
         username,
         masterkey: secret,
         blob,
         keys: newCustomKeys,
+      })
+      .then((options) => {
+        // TODO update blob.key
+        const { authInfo } = oldCustomKeys;
+        return checkEmailVerified(authInfo)
+          .then(() => this.client.changePassword(options))
+          .then(result => this.setLoginToken(result))
+          .then((resolved) => {
+            return this.writeCustomKeysCb(newCustomKeys)
+              .then(() => Promise.resolve({ newCustomKeys, resolved }));
+          });
       });
-
-      // TODO update blob.key
-
-      const { authInfo } = oldCustomKeys;
-      return checkEmailVerified(authInfo)
-        .then(() => this.client.changePassword(options))
-        .then(result => this.setLoginToken(result))
-        .then((resolved) => {
-          this.writeCustomKeysCb(newCustomKeys);
-          return Promise.resolve({ newCustomKeys, resolved });
-        });
     };
 
     const newCustomKeysPromise = this.createAndDeriveCustomKeys(username, newPassword, loginInfo.customKeys.authInfo);
@@ -222,8 +225,8 @@ class VaultClientClass {
         const { result, loginToken, newBlobData, encrypted_secret } = resp;
         const resultLoginInfo = updateLoginInfo(loginInfo, result, newBlobData);
         resultLoginInfo.blob.encrypted_secret = encrypted_secret;
-        this.writeCustomKeysCb(resultLoginInfo.customKeys);
-        return Promise.resolve({ loginInfo: resultLoginInfo, loginToken });
+        return this.writeCustomKeysCb(resultLoginInfo.customKeys)
+          .then(() => Promise.resolve({ loginInfo: resultLoginInfo, loginToken }));
       });
   }
 
@@ -243,28 +246,28 @@ class VaultClientClass {
   }
 
   get2FAInfo(loginInfo) {
-    const options = this.getLoginToken({
+    return this.getLoginToken({
       blob: loginInfo.blob,
-    });
-    return BlobAPI.get2FA(options)
-      .then(result => this.setLoginToken(result));
+    })
+    .then(options => BlobAPI.get2FA(options))
+    .then(result => this.setLoginToken(result));
   }
 
   set2FAInfo(loginInfo, enable, phone) {
     return this.unlockAccount(loginInfo)
       .then((secret) => {
         const { blob } = loginInfo;
-        const options = this.getLoginToken({
+        return this.getLoginToken({
           masterkey: secret,
           enabled: enable,
           phoneNumber: phone.phoneNumber,
           countryCode: phone.countryCode,
           blob,
         });
-        return BlobAPI.set2FA(options)
-          .then(result => this.setLoginToken(result))
-          .then(result => Promise.resolve({ ...result, loginInfo }));
-      });
+      })
+      .then(options => BlobAPI.set2FA(options))
+      .then(result => this.setLoginToken(result))
+      .then(result => Promise.resolve({ ...result, loginInfo }));
   }
 
   authLoginAccount(authInfo, data) {
@@ -280,21 +283,23 @@ class VaultClientClass {
   logoutAccount(loginInfo) {
     return this.unlockAccount(loginInfo)
       .then((secret) => {
-        const options = this.getLoginToken({
+        return this.getLoginToken({
           blob: loginInfo.blob,
           masterkey: secret,
         });
-        return this.client.logoutAccount(options);
       })
+      .then(options => this.client.logoutAccount(options))
       .then(result => this.setLoginToken(result))
       .then((result) => {
-        this.writeCustomKeysCb(null);
-        return result;
+        return this.writeCustomKeysCb(null)
+          .then(() => result);
       })
       .catch((err) => {
-        this.writeLoginTokenCb(null);
-        this.writeCustomKeysCb(null);
-        return Promise.reject(err);
+        return Promise.all([
+          this.writeLoginTokenCb(null),
+          this.writeCustomKeysCb(null),
+        ])
+        .then(() => Promise.reject(err));
       });
   }
 
@@ -324,13 +329,14 @@ class VaultClientClass {
         const { authInfo } = customKeys;
         this.client.infos[customKeys.id] = authInfo;
 
-        this.writeCustomKeysCb(customKeys);
-
-        return Promise.resolve({
-          blob,
-          customKeys,
-          username: authInfo.username,
-        });
+        return this.writeCustomKeysCb(customKeys)
+          .then(() => {
+            return Promise.resolve({
+              blob,
+              customKeys,
+              username: authInfo.username,
+            });
+          });
       });
   }
 
@@ -364,7 +370,7 @@ class VaultClientClass {
     return this.unlockAccount(loginInfo)
       .then((secret) => {
         const { blob, username } = loginInfo;
-        const options = this.getLoginToken({
+        return this.getLoginToken({
           url: blob.url,
           blob,
           masterkey: secret,
@@ -374,14 +380,14 @@ class VaultClientClass {
             hostlink,
           },
         });
-        return this.client.authRequestUpdateEmail(options)
-          .then(result => this.setLoginToken(result))
-          .then((resp) => {
-            const { result, ...restResp } = resp;
-            const resultLoginInfo = updateLoginInfo(loginInfo, result);
-            this.writeCustomKeysCb(resultLoginInfo.customKeys);
-            return Promise.resolve({ ...restResp, loginInfo: resultLoginInfo });
-          });
+      })
+      .then(options => this.client.authRequestUpdateEmail(options))
+      .then(result => this.setLoginToken(result))
+      .then((resp) => {
+        const { result, ...restResp } = resp;
+        const resultLoginInfo = updateLoginInfo(loginInfo, result);
+        return this.writeCustomKeysCb(resultLoginInfo.customKeys)
+          .then(() => Promise.resolve({ ...restResp, loginInfo: resultLoginInfo }));
       });
   }
 
@@ -398,21 +404,21 @@ class VaultClientClass {
           encrypted_secretdecrypt_key: BlobObj.encryptBlobCrypt(recoveryKey, customKeys.unlock),
         };
 
-        const options = this.getLoginToken({
+        return this.getLoginToken({
           url: blob.url,
           blob,
           masterkey: secret,
           username,
           data,
+        })
+        .then(options => this.client.authVerifyUpdateEmail(options))
+        .then(result => this.setLoginToken(result))
+        .then((resp) => {
+          const { result, ...restResp } = resp;
+          const resultLoginInfo = updateLoginInfo(loginInfo, result);
+          return this.writeCustomKeysCb(resultLoginInfo.customKeys)
+            .then(() => Promise.resolve({ ...restResp, loginInfo: resultLoginInfo }));
         });
-        return this.client.authVerifyUpdateEmail(options)
-          .then(result => this.setLoginToken(result))
-          .then((resp) => {
-            const { result, ...restResp } = resp;
-            const resultLoginInfo = updateLoginInfo(loginInfo, result);
-            this.writeCustomKeysCb(resultLoginInfo.customKeys);
-            return Promise.resolve({ ...restResp, loginInfo: resultLoginInfo });
-          });
       });
   }
 
@@ -427,7 +433,7 @@ class VaultClientClass {
     const _authRequestUpdatePhone = (username, blob, secret) => {
       const { countryCode, phoneNumber } = phone;
 
-      const options = this.getLoginToken({
+      return this.getLoginToken({
         url: blob.url,
         blob,
         masterkey: secret,
@@ -437,10 +443,9 @@ class VaultClientClass {
           phoneNumber,
           via: 'sms',
         },
-      });
-
-      return this.client.authRequestUpdatePhone(options);
-    }
+      })
+      .then(options => this.client.authRequestUpdatePhone(options));
+    };
 
     return this.unlockAccount(loginInfo)
       .then(secret => _authRequestUpdatePhone(loginInfo.username, loginInfo.blob, secret))
@@ -448,8 +453,8 @@ class VaultClientClass {
       .then((resp) => {
         const { result, ...restResp } = resp;
         const resultLoginInfo = updateLoginInfo(loginInfo, result);
-        this.writeCustomKeysCb(resultLoginInfo.customKeys);
-        return Promise.resolve({ ...restResp, loginInfo: resultLoginInfo });
+        return this.writeCustomKeysCb(resultLoginInfo.customKeys)
+          .then(() => Promise.resolve({ ...restResp, loginInfo: resultLoginInfo }));
       });
   }
 
@@ -465,15 +470,14 @@ class VaultClientClass {
         revision: newBlob.revision,
       };
 
-      const options = this.getLoginToken({
+      return this.getLoginToken({
         url: blob.url,
         blob,
         masterkey: secret,
         username,
         data,
-      });
-
-      return this.client.authVerifyUpdatePhone(options);
+      })
+      .then(options => this.client.authVerifyUpdatePhone(options));
     };
 
     return this.unlockAccount(loginInfo)
@@ -482,8 +486,8 @@ class VaultClientClass {
       .then((resp) => {
         const { result, ...restResp } = resp;
         const resultLoginInfo = updateLoginInfo(loginInfo, result, newBlob.data);
-        this.writeCustomKeysCb(resultLoginInfo.customKeys);
-        return Promise.resolve({ ...restResp, loginInfo: resultLoginInfo });
+        return this.writeCustomKeysCb(resultLoginInfo.customKeys)
+          .then(() => Promise.resolve({ ...restResp, loginInfo: resultLoginInfo }));
       });
   }
 
@@ -507,13 +511,14 @@ class VaultClientClass {
       })
       .then((results) => {
         const { blob, customKeys } = results;
-        this.writeCustomKeysCb(customKeys);
-
-        return Promise.resolve({
-          blob,
-          customKeys,
-          username: customKeys.authInfo.username,
-        });
+        return this.writeCustomKeysCb(customKeys)
+          .then(() => {
+            return Promise.resolve({
+              blob,
+              customKeys,
+              username: customKeys.authInfo.username,
+            });
+          });
       });
   }
 
@@ -544,39 +549,41 @@ class VaultClientClass {
     return this.unlockAccount(loginInfo)
       .then((secret) => {
         const { blob } = loginInfo;
-        const options = this.getLoginToken({
+        return this.getLoginToken({
           url: blob.url,
           blob_id: blob.id,
           username,
           account_id: blob.data.account_id,
           masterkey: secret,
         });
-        return this.client.blockAccount(options)
-          .then(result => this.setLoginToken(result))
-          .then((result) => {
-            this.writeCustomKeysCb(null);
-            return Promise.resolve({ ...result, loginInfo: null });
-          })
-          .catch((err) => {
-            this.writeLoginTokenCb(null);
-            this.writeCustomKeysCb(null);
-            return Promise.reject(err);
-          });
+      })
+      .then(options => this.client.blockAccount(options))
+      .then(result => this.setLoginToken(result))
+      .then((result) => {
+        return this.writeCustomKeysCb(null)
+          .then(() => Promise.resolve({ ...result, loginInfo: null }));
+      })
+      .catch((err) => {
+        return Promise.all([
+          this.writeLoginTokenCb(null),
+          this.writeCustomKeysCb(null),
+        ])
+        .then(() => Promise.reject(err));
       });
   }
 
   uploadPhotos(loginInfo, formData) {
-    const options = this.getLoginToken({
+    return this.getLoginToken({
       blob: loginInfo.blob,
       formData,
+    })
+    .then(options => this.client.uploadPhotos(options))
+    .then(result => this.setLoginToken(result))
+    .then((resp) => {
+      const newLoginInfo = cloneLoginInfo(loginInfo);
+      newLoginInfo.blob.id_photos = resp.id_photos;
+      return Promise.resolve({ loginInfo: newLoginInfo });
     });
-    return this.client.uploadPhotos(options)
-      .then(result => this.setLoginToken(result))
-      .then((resp) => {
-        const newLoginInfo = cloneLoginInfo(loginInfo);
-        newLoginInfo.blob.id_photos = resp.id_photos;
-        return Promise.resolve({ loginInfo: newLoginInfo });
-      });
   }
 
   addBankAccount(loginInfo, bankAccountInfo, updateBlobDataCallback) {
@@ -586,15 +593,14 @@ class VaultClientClass {
 
         updateBlobDataCallback(newLoginInfo.blob.data);
 
-        const options = this.getLoginToken({
+        return this.getLoginToken({
           masterkey: secret,
           blob: newLoginInfo.blob,
           bankAccountInfo,
-        });
-
-        return this.client.addBankAccount(options)
-          .then(result => this.setLoginToken(result))
-          .then(resolved => Promise.resolve({ ...resolved, loginInfo: newLoginInfo }));
+        })
+        .then(options => this.client.addBankAccount(options))
+        .then(result => this.setLoginToken(result))
+        .then(resolved => Promise.resolve({ ...resolved, loginInfo: newLoginInfo }));
       });
   }
 
@@ -604,48 +610,64 @@ class VaultClientClass {
         const newLoginInfo = cloneLoginInfo(loginInfo);
         updateBlobDataCallback(newLoginInfo.blob.data);
 
-        const options = this.getLoginToken({
+        return this.getLoginToken({
           masterkey: secret,
           blob: newLoginInfo.blob,
           bankAccountInfo,
-        });
-        return this.client.deleteBankAccount(options)
+        })
+        .then(options => this.client.deleteBankAccount(options))
           .then(result => this.setLoginToken(result))
           .then(resolved => Promise.resolve({ ...resolved, loginInfo: newLoginInfo }));
       });
   }
 
   getLoginInfo() {
-    const customKeys = this.readCustomKeysCb();
-    const loginToken = this.readLoginTokenCb();
-    if (!customKeys || !loginToken) {
-      return Promise.reject(new Error('No login token or keys'));
-    }
-    return this.client.getBlob(customKeys.authInfo.blobvault, loginToken)
-      .then(result => this.setLoginToken(result))
-      .then((result) => {
-        const { blob } = result;
+    return Promise.all([
+      this.readCustomKeysCb(),
+      this.readLoginTokenCb(),
+    ])
+    .then(([customKeys, loginToken]) => {
+      if (!customKeys || !loginToken) {
+        return Promise.reject(new Error('No login token or keys'));
+      }
+      const blobPromise = this.client.getBlob(customKeys.authInfo.blobvault, loginToken);
+      return Promise.all([
+        blobPromise,
+        customKeys,
+      ]);
+    })
+    .then(([result, customKeys]) => {
+      return Promise.all([
+        this.setLoginToken(result),
+        customKeys,
+      ]);
+    })
+    .then(([result, customKeys]) => {
+      const { blob } = result;
 
-        const options = {
-          url: customKeys.authInfo.blobvault,
-          blob_id: customKeys.id,
-          key: customKeys.crypt,
-        };
-        const blobObj = new BlobObj(options);
-        return blobObj.init(blob);
-      })
-      .then((blobObj) => {
-        return Promise.resolve({
-          blob: blobObj,
-          customKeys,
-          username: customKeys.authInfo.username,
-        });
-      })
-      .catch((err) => {
-        this.writeLoginTokenCb(null);
-        this.writeCustomKeysCb(null);
-        return Promise.reject(err);
+      const options = {
+        url: customKeys.authInfo.blobvault,
+        blob_id: customKeys.id,
+        key: customKeys.crypt,
+      };
+      const blobObj = new BlobObj(options);
+      return Promise.all([
+        blobObj.init(blob),
+        customKeys,
+      ]);
+    })
+    .then(([blobObj, customKeys]) => {
+      return Promise.resolve({
+        blob: blobObj,
+        customKeys,
+        username: customKeys.authInfo.username,
       });
+    })
+    .catch((err) => {
+      this.writeLoginTokenCb(null);
+      this.writeCustomKeysCb(null);
+      return Promise.reject(err);
+    });
   }
 }
 
