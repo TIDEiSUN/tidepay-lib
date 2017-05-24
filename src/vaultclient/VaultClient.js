@@ -145,10 +145,32 @@ class VaultClientClass {
     return Promise.resolve(resp);
   }
 
-  unlockAccount(loginInfo) {
-    const { customKeys, blob } = loginInfo;
-    const { encrypted_secret } = blob;
-    return this.client.unlock(encrypted_secret, customKeys);
+  unlockAccount() {
+    return Promise.all([
+      this.readCustomKeysCb(),
+      this.readLoginTokenCb(),
+    ])
+    .then(([customKeys, loginToken]) => {
+      if (!customKeys || !loginToken) {
+        return Promise.reject(new Error('No login token or keys'));
+      }
+      const encryptedSecretPromise = this.client.getEncryptedSecretByBlobId(customKeys.authInfo.blobvault, loginToken, customKeys.id);
+      return Promise.all([
+        encryptedSecretPromise,
+        customKeys,
+      ]);
+    })
+    .then(([result, customKeys]) => {
+      return Promise.all([
+        this.setLoginToken(result),
+        customKeys,
+      ]);
+    })
+    .then(([result, customKeys]) => {
+      const { secret } = result;
+      const { encrypted_secret } = secret;
+      return this.client.unlock(encrypted_secret, customKeys);
+    });
   }
 
   updateBlob(username, loginInfo, newBlob) {
@@ -196,7 +218,7 @@ class VaultClientClass {
     };
 
     const newCustomKeysPromise = this.createAndDeriveCustomKeys(username, newPassword, loginInfo.customKeys.authInfo);
-    const unlockPromise = this.unlockAccount(loginInfo);
+    const unlockPromise = this.unlockAccount();
     return Promise.all([
       unlockPromise,
       newCustomKeysPromise,
@@ -220,9 +242,8 @@ class VaultClientClass {
     return this.client.authActivateAccount(customKeys, email, authToken, data, createAccountToken)
       .then(result => this.setLoginToken(result))
       .then((resp) => {
-        const { result, loginToken, newBlobData, encrypted_secret } = resp;
+        const { result, loginToken, newBlobData } = resp;
         const resultLoginInfo = updateLoginInfo(loginInfo, result, newBlobData);
-        resultLoginInfo.blob.encrypted_secret = encrypted_secret;
         return this.writeCustomKeysCb(resultLoginInfo.customKeys)
           .then(() => Promise.resolve({ loginInfo: resultLoginInfo, loginToken }));
       });
@@ -597,7 +618,7 @@ class VaultClientClass {
       if (!customKeys || !loginToken) {
         return Promise.reject(new Error('No login token or keys'));
       }
-      const blobPromise = this.client.getBlob(customKeys.authInfo.blobvault, loginToken);
+      const blobPromise = this.client.getBlob(customKeys.authInfo.blobvault, loginToken, customKeys.id);
       return Promise.all([
         blobPromise,
         customKeys,

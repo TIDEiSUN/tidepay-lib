@@ -8,13 +8,13 @@ import Utils from './utils';
  */
 
 export default {
-  getBlob(url, token) {
+  getBlob(url, token, blobId) {
     const config = {
       method: 'GET',
       authorization: token,
     };
     const gconfig = Utils.makeFetchRequestOptions(config);
-    return fetch(`${url}/v1/blob`, gconfig)
+    return fetch(`${url}/v1/blob/${blobId}`, gconfig)
     .then((resp) => {
       return Utils.handleFetchResponse(resp);
     })
@@ -23,6 +23,24 @@ export default {
     })
     .catch((err) => {
       return Utils.handleFetchError(err, 'getBlob');
+    });
+  },
+
+  getEncryptedSecretByBlobId(url, token, blobId) {
+    const config = {
+      method: 'GET',
+      authorization: token,
+    };
+    const gconfig = Utils.makeFetchRequestOptions(config);
+    return fetch(`${url}/v1/secret/blob/${blobId}`, gconfig)
+    .then((resp) => {
+      return Utils.handleFetchResponse(resp);
+    })
+    .then((data) => {
+      return Promise.resolve(data);
+    })
+    .catch((err) => {
+      return Utils.handleFetchError(err, 'getEncryptedSecretByBlobId');
     });
   },
 
@@ -171,7 +189,7 @@ export default {
     const old_id  = opts.blob.id;
     opts.blob.id  = opts.keys.id;
     opts.blob.key = opts.keys.crypt;
-    opts.blob.encrypted_secret = opts.blob.encryptSecret(opts.keys.unlock, opts.masterkey);
+    const encrypted_secret = opts.blob.encryptSecret(opts.keys.unlock, opts.masterkey);
 
     const recoveryKey = Utils.createRecoveryKey(opts.blob.email);
 
@@ -182,7 +200,7 @@ export default {
         blob_id  : opts.blob.id,
         data     : opts.blob.encrypt(),
         revision : opts.blob.revision,
-        encrypted_secret : opts.blob.encrypted_secret,
+        encrypted_secret : encrypted_secret,
         encrypted_blobdecrypt_key : BlobObj.encryptBlobCrypt(recoveryKey, opts.keys.crypt),
         encrypted_secretdecrypt_key : BlobObj.encryptBlobCrypt(recoveryKey, opts.keys.unlock),
       },
@@ -232,7 +250,7 @@ export default {
       activated: (new Date()).toJSON(),
     };
 
-    blob.encrypted_secret = blob.encryptSecret(keys.unlock, masterkey);
+    const encrypted_secret = blob.encryptSecret(keys.unlock, masterkey);
 
     const recoveryKey = Utils.createRecoveryKey(email);
 
@@ -244,7 +262,7 @@ export default {
         email,
         authToken,
         data: blob.encrypt(),
-        encrypted_secret: blob.encrypted_secret,
+        encrypted_secret: encrypted_secret,
         encrypted_blobdecrypt_key: BlobObj.encryptBlobCrypt(recoveryKey, keys.crypt),
         encrypted_secretdecrypt_key: BlobObj.encryptBlobCrypt(recoveryKey, keys.unlock),
       },
@@ -260,7 +278,7 @@ export default {
         return Utils.handleFetchResponse(resp);
       })
       .then((data) => {
-        return Promise.resolve({ ...data, newBlobData: blob.data, encrypted_secret: blob.encrypted_secret });
+        return Promise.resolve({ ...data, newBlobData: blob.data });
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'authActivateAccount');
