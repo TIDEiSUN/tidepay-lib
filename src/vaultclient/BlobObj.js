@@ -206,16 +206,6 @@ export default class BlobObj {
   }
 
   /**
-   * Decrypt secret with unlock key
-   *
-   * @param {string} secretUnlockkey
-   */
-
-  decryptSecret(secretUnlockKey) {
-    return crypt.decrypt(secretUnlockKey, this.encrypted_secret);
-  }
-
-  /**
    * Decrypt blob with crypt key
    *
    * @param {string} data - encrypted blob data

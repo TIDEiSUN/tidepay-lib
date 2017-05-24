@@ -8,13 +8,13 @@ import Utils from './utils';
  */
 
 export default {
-  getBlob(url, token) {
+  getBlob(url, token, blobId) {
     const config = {
       method: 'GET',
       authorization: token,
     };
     const gconfig = Utils.makeFetchRequestOptions(config);
-    return fetch(`${url}/v1/blob`, gconfig)
+    return fetch(`${url}/v1/blob/${blobId}`, gconfig)
     .then((resp) => {
       return Utils.handleFetchResponse(resp);
     })
@@ -23,6 +23,24 @@ export default {
     })
     .catch((err) => {
       return Utils.handleFetchError(err, 'getBlob');
+    });
+  },
+
+  getEncryptedSecretByBlobId(url, token, blobId) {
+    const config = {
+      method: 'GET',
+      authorization: token,
+    };
+    const gconfig = Utils.makeFetchRequestOptions(config);
+    return fetch(`${url}/v1/secret/blob/${blobId}`, gconfig)
+    .then((resp) => {
+      return Utils.handleFetchResponse(resp);
+    })
+    .then((data) => {
+      return Promise.resolve(data);
+    })
+    .catch((err) => {
+      return Utils.handleFetchError(err, 'getEncryptedSecretByBlobId');
     });
   },
 
@@ -124,7 +142,6 @@ export default {
    * @param {string} opts.username
    * @param {object} opts.keys
    * @param {object} opts.blob
-   * @param {string} masterkey
    */
 
   updateBlob(opts) {
@@ -140,7 +157,7 @@ export default {
 
     try {
       const signedRequest = new SignedRequest(config);
-      const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, opts.blob.id);
+      const signed = signedRequest.signHmac(opts.blob.data.auth_secret, opts.blob.id);
       const options = Utils.makeFetchRequestOptions(config);
 
       return fetch(signed.url, options)
@@ -172,7 +189,7 @@ export default {
     const old_id  = opts.blob.id;
     opts.blob.id  = opts.keys.id;
     opts.blob.key = opts.keys.crypt;
-    opts.blob.encrypted_secret = opts.blob.encryptSecret(opts.keys.unlock, opts.masterkey);
+    const encrypted_secret = opts.blob.encryptSecret(opts.keys.unlock, opts.masterkey);
 
     const recoveryKey = Utils.createRecoveryKey(opts.blob.email);
 
@@ -183,7 +200,7 @@ export default {
         blob_id  : opts.blob.id,
         data     : opts.blob.encrypt(),
         revision : opts.blob.revision,
-        encrypted_secret : opts.blob.encrypted_secret,
+        encrypted_secret : encrypted_secret,
         encrypted_blobdecrypt_key : BlobObj.encryptBlobCrypt(recoveryKey, opts.keys.crypt),
         encrypted_secretdecrypt_key : BlobObj.encryptBlobCrypt(recoveryKey, opts.keys.unlock),
       },
@@ -192,7 +209,7 @@ export default {
 
     try {
       const signedRequest = new SignedRequest(config);
-      const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, old_id);
+      const signed = signedRequest.signHmac(opts.blob.data.auth_secret, old_id);
       const options = Utils.makeFetchRequestOptions(config);
 
       return fetch(signed.url, options)
@@ -233,7 +250,7 @@ export default {
       activated: (new Date()).toJSON(),
     };
 
-    blob.encrypted_secret = blob.encryptSecret(keys.unlock, masterkey);
+    const encrypted_secret = blob.encryptSecret(keys.unlock, masterkey);
 
     const recoveryKey = Utils.createRecoveryKey(email);
 
@@ -245,7 +262,7 @@ export default {
         email,
         authToken,
         data: blob.encrypt(),
-        encrypted_secret: blob.encrypted_secret,
+        encrypted_secret: encrypted_secret,
         encrypted_blobdecrypt_key: BlobObj.encryptBlobCrypt(recoveryKey, keys.crypt),
         encrypted_secretdecrypt_key: BlobObj.encryptBlobCrypt(recoveryKey, keys.unlock),
       },
@@ -261,7 +278,7 @@ export default {
         return Utils.handleFetchResponse(resp);
       })
       .then((data) => {
-        return Promise.resolve({ ...data, newBlobData: blob.data, encrypted_secret: blob.encrypted_secret });
+        return Promise.resolve({ ...data, newBlobData: blob.data });
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'authActivateAccount');
@@ -304,7 +321,7 @@ export default {
 
     try {
       const signedRequest = new SignedRequest(config);
-      const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, opts.blob.id);
+      const signed = signedRequest.signHmac(opts.blob.data.auth_secret, opts.blob.id);
       const options = Utils.makeFetchRequestOptions(config);
 
       return fetch(signed.url, options)
@@ -332,7 +349,7 @@ export default {
 
     try {
       const signedRequest = new SignedRequest(config);
-      const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, opts.blob.id);
+      const signed = signedRequest.signHmac(opts.blob.data.auth_secret, opts.blob.id);
       const options = Utils.makeFetchRequestOptions(config);
 
       return fetch(signed.url, options)
@@ -360,7 +377,7 @@ export default {
 
     try {
       const signedRequest = new SignedRequest(config);
-      const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, opts.blob.id);
+      const signed = signedRequest.signHmac(opts.blob.data.auth_secret, opts.blob.id);
       const options = Utils.makeFetchRequestOptions(config);
 
       return fetch(signed.url, options)
@@ -388,7 +405,7 @@ export default {
 
     try {
       const signedRequest = new SignedRequest(config);
-      const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, opts.blob.id);
+      const signed = signedRequest.signHmac(opts.blob.data.auth_secret, opts.blob.id);
       const options = Utils.makeFetchRequestOptions(config);
 
       return fetch(signed.url, options)
@@ -415,7 +432,6 @@ export default {
    * @param {string} opts.crypt
    * @param {string} opts.unlock
    * @param {string} opts.username
-   * @param {string} opts.masterkey
    * @param {object} opts.domain
    */
   authCreate(opts) {
@@ -470,8 +486,7 @@ export default {
    * @param {string} options.url
    * @param {string} options.username
    * @param {string} options.blob_id
-   * @param {string} options.account_id
-   * @param {string} options.masterkey
+   * @param {string} options.auth_secret
    */
 
   deleteBlob(options) {
@@ -483,7 +498,7 @@ export default {
 
     try {
       const signedRequest = new SignedRequest(config);
-      const signed = signedRequest.signAsymmetric(options.masterkey, options.account_id, options.blob_id);
+      const signed = signedRequest.signHmac(options.auth_secret, options.blob_id);
 
       return fetch(signed.url, { method: 'DELETE' })
       .then((resp) => {
@@ -505,9 +520,8 @@ export default {
    * @param {object} opts
    * @param {string} opts.url
    * @param {string} opts.username
-   * @param {string} opts.masterkey
-   * @param {string} opts.account_id
    * @param {string} opts.blob_id
+   * @param {string} opts.auth_secret
    */
 
   blockAccount(opts) {
@@ -519,7 +533,7 @@ export default {
 
     try {
       const signedRequest = new SignedRequest(config);
-      const signed = signedRequest.signAsymmetric(opts.masterkey, opts.account_id, opts.blob_id);
+      const signed = signedRequest.signHmac(opts.auth_secret, opts.blob_id);
       const options = Utils.makeFetchRequestOptions(config);
 
       return fetch(signed.url, options)
@@ -542,7 +556,6 @@ export default {
    * @param {object} opts
    * @param {object} opts.blob
    * @param {object} opts.bankAccountInfo
-   * @param {string} opts.masterkey
    */
 
   addBankAccount(opts) {
@@ -559,7 +572,7 @@ export default {
 
     try {
       const signedRequest = new SignedRequest(config);
-      const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, opts.blob.id);
+      const signed = signedRequest.signHmac(opts.blob.data.auth_secret, opts.blob.id);
       const options = Utils.makeFetchRequestOptions(config);
 
       return fetch(signed.url, options)
@@ -582,7 +595,6 @@ export default {
    * @param {object} opts
    * @param {object} opts.blob
    * @param {object} opts.bankAccountInfo
-   * @param {string} opts.masterkey
    */
 
   deleteBankAccount(opts) {
@@ -599,7 +611,7 @@ export default {
 
     try {
       const signedRequest = new SignedRequest(config);
-      const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, opts.blob.id);
+      const signed = signedRequest.signHmac(opts.blob.data.auth_secret, opts.blob.id);
       const options = Utils.makeFetchRequestOptions(config);
 
       return fetch(signed.url, options)
@@ -656,7 +668,6 @@ export default {
    * set2FA
    * modify 2 factor auth settings
    * @params {object}  opts
-   * @params {string}  opts.masterkey
    * @params {boolean} opts.enabled
    * @params {string}  opts.phoneNumber
    * @params {string}  opts.countryCode
@@ -676,7 +687,7 @@ export default {
 
     try {
       const signedRequest = new SignedRequest(config);
-      const signed = signedRequest.signAsymmetric(opts.masterkey, opts.blob.data.account_id, opts.blob.id);
+      const signed = signedRequest.signHmac(opts.blob.data.auth_secret, opts.blob.id);
       const options = Utils.makeFetchRequestOptions(config);
 
       return fetch(signed.url, options)
@@ -715,7 +726,7 @@ export default {
   },
 
   logoutAccount(opts) {
-    const { blob, loginToken, masterkey } = opts;
+    const { blob, loginToken } = opts;
     const config = {
       method: 'POST',
       url: `${blob.url}/v1/user/auth/logout`,
@@ -723,7 +734,7 @@ export default {
     };
     try {
       const signedRequest = new SignedRequest(config);
-      const signed = signedRequest.signAsymmetric(masterkey, blob.data.account_id, blob.id);
+      const signed = signedRequest.signHmac(blob.data.auth_secret, blob.id);
       const options = Utils.makeFetchRequestOptions(config);
 
       return fetch(signed.url, options)
