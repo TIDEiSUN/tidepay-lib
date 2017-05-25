@@ -105,7 +105,7 @@ export default class BlobVaultAPI {
    * Activate a tidepay account
    */
 
-  authActivateAccount(customKeys, email, authToken, blobData, createAccountToken) {
+  authActivateAccount(customKeys, email, authToken, blobData, createAccountToken, unlockSecret) {
     const createAccount = () => {
       return fetch(`${this.isunpayrpcURL}/account/${createAccountToken}`, { method: 'POST' })
       .then((resp) => {
@@ -116,7 +116,7 @@ export default class BlobVaultAPI {
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'authActivateAccount');
-      })
+      });
     };
 
     return createAccount()
@@ -130,6 +130,7 @@ export default class BlobVaultAPI {
           url: customKeys.authInfo.blobvault,
           authToken,
           blobData,
+          unlockSecret,
         };
         return BlobAPI.authActivateAccount(options);
       });
@@ -177,7 +178,6 @@ export default class BlobVaultAPI {
         url: authInfo.blobvault,
         id: customKeys.id,
         crypt: customKeys.crypt,
-        unlock: customKeys.unlock,
         username: username,
         email: options.email,
         activateLink: options.activateLink,
@@ -197,7 +197,7 @@ export default class BlobVaultAPI {
     return this.getAuthInfo(username)
       .then((authInfo) => {
         const customKeys = new CustomKeys(authInfo);
-        return customKeys.deriveKeys(password);
+        return customKeys.deriveLoginKeys(password);
       })
       .then((customKeys) => create(customKeys.authInfo, customKeys));
   }
@@ -284,6 +284,8 @@ BlobVaultAPI.prototype.authUnblockAccount = BlobAPI.authUnblockAccount;
 
 BlobVaultAPI.prototype.authRecoverAccount = BlobAPI.authRecoverAccount;
 
+BlobVaultAPI.prototype.authRecoverSecret = BlobAPI.authRecoverSecret;
+
 BlobVaultAPI.prototype.authRequestUpdateEmail = BlobAPI.authRequestUpdateEmail;
 
 BlobVaultAPI.prototype.authVerifyUpdateEmail = BlobAPI.authVerifyUpdateEmail;
@@ -305,3 +307,7 @@ BlobVaultAPI.prototype.uploadPhotos = BlobAPI.uploadPhotos;
 BlobVaultAPI.prototype.logoutAccount = BlobAPI.logoutAccount;
 
 BlobVaultAPI.prototype.getEncryptedSecretByBlobId = BlobAPI.getEncryptedSecretByBlobId;
+
+BlobVaultAPI.prototype.getEncryptedSecretBySecretId = BlobAPI.getEncryptedSecretBySecretId;
+
+BlobVaultAPI.prototype.changePaymentPin = BlobAPI.changePaymentPin;

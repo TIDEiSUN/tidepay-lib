@@ -7,6 +7,10 @@ export default {
     return `@@@RecoveR!!!!!${email}!!`;
   },
 
+  createSecretRecoveryKey(phone, unlockSecret) {
+    return `@@@SecretRecoveR!!!!!(${phone.countryCode})${phone.phoneNumber}_${unlockSecret}!!`;
+  },
+
   maskphone(phone) {
     if (!phone) {
       return '';

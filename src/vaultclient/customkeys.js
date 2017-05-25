@@ -4,8 +4,9 @@ export default class CustomKeys {
   constructor(authInfo) {
     this.authInfo = authInfo;
     this.username = authInfo.username;
-    this.id = null;
+    this.id = null;         // login
     this.crypt = null;      // login
+    this.secretId = null;   // unlock
     this.unlock = null;     // unlock
   }
 
@@ -13,18 +14,17 @@ export default class CustomKeys {
     const customKeys = new CustomKeys(obj.authInfo);
     customKeys.id = obj.id;
     customKeys.crypt = obj.crypt;
+    customKeys.secretId = obj.secretId;
     customKeys.unlock = obj.unlock;
     return customKeys;
   }
 
-  setUsername(username) {
-    if (this.username !== username) {
-      this.id = null;
-      this.crypt = null;
-      this.unlock = null;
-      this.username = username;
-      this.authInfo.username = username;
-    }
+  static clone(obj) {
+    return this.deserialize(obj);
+  }
+
+  static createUnlockSecret() {
+    return crypt.createSecret(4);
   }
 
   /**
@@ -44,30 +44,20 @@ export default class CustomKeys {
   }
 
   /**
-   * deriveUnlockKey
+   * deriveUnlockKeys
    */
-  deriveUnlockKey(password) {
-    const normalizedUsername = this.authInfo.username.toLowerCase().replace(/-/g, '');
+  deriveUnlockKeys(unlockSecret, paymentPin = '') {
+    const normalizedUnlockSecret = unlockSecret.toLowerCase();
 
     // derive unlock key
-    return crypt.derive(this.authInfo.pakdf, 'unlock', normalizedUsername, password)
+    return crypt.derive(this.authInfo.pakdf, 'unlock', normalizedUnlockSecret, paymentPin)
       .then((keys) => {
-        console.log('deriveUnlockKey: derived new');
-         
+        console.log('deriveUnlockKeys: derived new');
+        if (paymentPin) {
+          this.secretId = keys.secretId;
+        }
         this.unlock = keys.unlock;
-       
         return Promise.resolve(this);
-      });
-  }
-
-  deriveKeys(password) {
-    return this.deriveLoginKeys(password)
-      .then(() => {
-        
-        return this.deriveUnlockKey(password)}).then((result)=>{
-        console.log('deriveKeysyo', result)
-       
-        return result
       });
   }
 
@@ -81,5 +71,17 @@ export default class CustomKeys {
     const normalizedUsername = this.authInfo.username.toLowerCase().replace(/-/g, '');
     return crypt.derive(this.authInfo.pakdf, 'login', normalizedUsername, candidatePassword)
       .then(keys => Promise.resolve({ correct: this.id === keys.id }));
+  }
+
+  /**
+   * Check whether the given payment pin is correct
+   */
+  isPaymentPinCorrect(unlockSecret, candidatePaymentPin) {
+    if (this.secretId === null) {
+      return Promise.reject(new Error('Secret has not unlocked'));
+    }
+    const normalizedUnlockSecret = unlockSecret.toLowerCase();
+    return crypt.derive(this.authInfo.pakdf, 'unlock', normalizedUnlockSecret, candidatePaymentPin)
+      .then(keys => Promise.resolve({ correct: this.secretId === keys.secretId }));
   }
 }

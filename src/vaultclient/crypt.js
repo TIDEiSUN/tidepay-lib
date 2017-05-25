@@ -88,8 +88,10 @@ const Crypt = {
 
     if (purpose === 'login') {
       tokens = ['id', 'crypt'];
+    } else if (purpose === 'unlock') {
+      tokens = ['secretId', 'unlock'];
     } else {
-      tokens = ['unlock'];
+      throw new Error('Invalid purpose');
     }
 
     var iExponent = new sjcl.bn(String(opts.exponent));
@@ -292,7 +294,7 @@ const Crypt = {
 
   decodeBase64(data) {
     return sjcl.codec.utf8String.fromBits(sjcl.codec.base64.toBits(data));
-  }
+  },
 
 };
 

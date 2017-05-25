@@ -44,6 +44,24 @@ export default {
     });
   },
 
+  getEncryptedSecretBySecretId(url, token, secretId) {
+    const config = {
+      method: 'GET',
+      authorization: token,
+    };
+    const gconfig = Utils.makeFetchRequestOptions(config);
+    return fetch(`${url}/v1/secret/${secretId}`, gconfig)
+    .then((resp) => {
+      return Utils.handleFetchResponse(resp);
+    })
+    .then((data) => {
+      return Promise.resolve(data);
+    })
+    .catch((err) => {
+      return Utils.handleFetchError(err, 'getEncryptedSecretBySecretId');
+    });
+  },
+
   authLogin(opts) {
     const config = Utils.makeFetchRequestOptions({ method: 'POST', data: opts.data });
     const url = `${opts.url}/v1/user/auth/login`;
@@ -89,6 +107,21 @@ export default {
     });
   },
 
+  authRecoverSecret(opts) {
+    const config = Utils.makeFetchRequestOptions({ method: 'POST', data: opts.data });
+    const url = `${opts.url}/v1/user/auth/recoverSecret`;
+    return fetch(url, config)
+    .then((resp) => {
+      return Utils.handleFetchResponse(resp);
+    })
+    .then((data) => {
+      return Promise.resolve(data);
+    })
+    .catch((err) => {
+      return Utils.handleFetchError(err, 'authRecoverSecret');
+    });
+  },
+
   handleRecovery(resp, customKeys) {
     return new Promise((resolve, reject) => {
       const {
@@ -99,7 +132,6 @@ export default {
         patches,
         locked,
         encrypted_blobdecrypt_key,
-        encrypted_secretdecrypt_key,
         username,
         ...respRest
       } = resp;
@@ -189,7 +221,6 @@ export default {
     const old_id  = opts.blob.id;
     opts.blob.id  = opts.keys.id;
     opts.blob.key = opts.keys.crypt;
-    const encrypted_secret = opts.blob.encryptSecret(opts.keys.unlock, opts.masterkey);
 
     const recoveryKey = Utils.createRecoveryKey(opts.blob.email);
 
@@ -200,9 +231,7 @@ export default {
         blob_id  : opts.blob.id,
         data     : opts.blob.encrypt(),
         revision : opts.blob.revision,
-        encrypted_secret : encrypted_secret,
         encrypted_blobdecrypt_key : BlobObj.encryptBlobCrypt(recoveryKey, opts.keys.crypt),
-        encrypted_secretdecrypt_key : BlobObj.encryptBlobCrypt(recoveryKey, opts.keys.unlock),
       },
       authorization: opts.loginToken,
     };
@@ -227,12 +256,49 @@ export default {
     }
   },
 
+  changePaymentPin(opts) {
+    const { old_secret_id, masterkey, blob, keys, loginToken } = opts;
+    const secretRecoveryKey = Utils.createSecretRecoveryKey(blob.data.phone, blob.data.unlock_secret);
+    const encryptedSecret = blob.encryptSecret(keys.unlock, masterkey);
+    const encryptedUnlock = BlobObj.encryptBlobCrypt(secretRecoveryKey, keys.unlock);
+    const config = {
+      method: 'POST',
+      url: `${blob.url}/v1/user/${opts.username}/updateSecretKeys`,
+      data: {
+        old_secret_id,
+        secret_id: keys.secretId,
+        encrypted_secret: encryptedSecret,
+        encrypted_secretdecrypt_key: encryptedUnlock,
+      },
+      authorization: loginToken,
+    };
+
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signHmac(blob.data.auth_secret, blob.id);
+      const options = Utils.makeFetchRequestOptions(config);
+
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((data) => {
+        return Promise.resolve(data);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'updateSecretKeys');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
+  },
+
   /**
    * Activate an account
    */
 
   authActivateAccount(opts) {
-    const { keys, email, masterkey, address, username, url, authToken, blobData } = opts;
+    const { keys, email, masterkey, address, username, url, authToken, blobData, unlockSecret } = opts;
 
     const params = {
       url,
@@ -248,6 +314,7 @@ export default {
       ...blobData,
       account_id: address,
       activated: (new Date()).toJSON(),
+      unlock_secret: unlockSecret,
     };
 
     const encrypted_secret = blob.encryptSecret(keys.unlock, masterkey);
@@ -264,7 +331,6 @@ export default {
         data: blob.encrypt(),
         encrypted_secret: encrypted_secret,
         encrypted_blobdecrypt_key: BlobObj.encryptBlobCrypt(recoveryKey, keys.crypt),
-        encrypted_secretdecrypt_key: BlobObj.encryptBlobCrypt(recoveryKey, keys.unlock),
       },
     };
 
@@ -430,7 +496,6 @@ export default {
    * @param {string} opts.url
    * @param {string} opts.id
    * @param {string} opts.crypt
-   * @param {string} opts.unlock
    * @param {string} opts.username
    * @param {object} opts.domain
    */
@@ -464,7 +529,6 @@ export default {
         hostlink    : opts.activateLink,
         domain      : opts.domain,
         encrypted_blobdecrypt_key : BlobObj.encryptBlobCrypt(recoveryKey, opts.crypt),
-        encrypted_secretdecrypt_key : BlobObj.encryptBlobCrypt(recoveryKey, opts.unlock),
       },
     });
     return fetch(`${opts.url}/v1/user/auth`, config)
