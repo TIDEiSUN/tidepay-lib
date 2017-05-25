@@ -24,7 +24,7 @@ export default class CustomKeys {
   }
 
   static createUnlockSecret() {
-    return crypt.createSecret(4);
+    return crypt.createSecret(8);
   }
 
   /**
