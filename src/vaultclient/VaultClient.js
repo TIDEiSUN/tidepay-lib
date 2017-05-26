@@ -493,34 +493,56 @@ class VaultClientClass {
     });
   }
 
-  authVerifyUpdateEmail(loginInfo, email, emailToken, authToken) {
-    const { blob, username } = loginInfo;
-    return this.readCustomKeysCb()
-      .then((customKeys) => {
-        const recoveryKey = Utils.createRecoveryKey(email);
-        const data = {
+  authVerifyAndUpdateEmail(username, email, emailToken, authToken) {
+    const getUrl = () => {
+      return this.client.getAuthInfo(username)
+        .then(authInfo => authInfo.blobvault);
+    };
+    const verify = (url) => {
+      const options = {
+        url,
+        username,
+        data: {
           email,
           emailToken,
           authToken,
-          encrypted_blobdecrypt_key: BlobObj.encryptBlobCrypt(recoveryKey, customKeys.crypt),
-        };
+        },
+      };
+      return this.client.authVerifyUpdateEmail(options);
+    };
+    const update = (url, verifyResult) => {
+      const {
+        authToken: newAuthToken,
+        email: oldEmail,
+        encrypted_blobdecrypt_key,
+      } = verifyResult;
 
-        return this.getLoginToken({
-          url: blob.url,
-          blob,
-          username,
-          data,
-        })
-        .then(options => this.client.authVerifyUpdateEmail(options))
-        .then(result => this.setLoginToken(result))
+      const recoveryKey = Utils.createRecoveryKey(oldEmail);
+      const newRecoveryKey = Utils.createRecoveryKey(email);
+      const blobCryptKey = BlobObj.decryptBlobCrypt(recoveryKey, encrypted_blobdecrypt_key);
+
+      const options = {
+        url,
+        username,
+        data: {
+          email,
+          authToken: newAuthToken,
+          encrypted_blobdecrypt_key: BlobObj.encryptBlobCrypt(newRecoveryKey, blobCryptKey),
+        },
+      };
+      return this.client.authUpdateEmail(options)
         .then((resp) => {
           const { result, ...restResp } = resp;
-          const resultLoginInfo = updateLoginInfo(loginInfo, result);
-          const resultCustomKeys = updateCustomKeys(customKeys, result);
-          return this.writeCustomKeysCb(resultCustomKeys)
-            .then(() => Promise.resolve({ ...restResp, loginInfo: resultLoginInfo }));
+          return Promise.resolve(restResp);
         });
-      });
+    };
+    const urlPromise = getUrl();
+    const verifyPromise = urlPromise.then(url => verify(url));
+    return Promise.all([
+      urlPromise,
+      verifyPromise,
+    ])
+    .then(([url, verifyResult]) => update(url, verifyResult));
   }
 
   cloneBlob(blob) {
@@ -556,25 +578,15 @@ class VaultClientClass {
       });
   }
 
-  authVerifyUpdatePhone(loginInfo, phone, phoneToken, authToken, newBlob, hasPaymentPin) {
-    const _authVerifyUpdatePhone = (customKeys, blob, username) => {
+  authVerifyAndUpdatePhone(loginInfo, phone, phoneToken, authToken, newBlob, hasPaymentPin) {
+    const verify = (blob, username) => {
       const { phoneNumber, countryCode } = phone;
-      const recoveryKey = Utils.createSecretRecoveryKey(phone, blob.data.unlock_secret);
       const data = {
         countryCode,
         phoneNumber,
         phoneToken,
         authToken,
-        data: newBlob.encrypt(),
-        revision: newBlob.revision,
       };
-      if (hasPaymentPin) {
-        if (!customKeys.unlock) {
-          return Promise.reject(new Error('Secret has not been unlocked'));
-        }
-        data.encrypted_secretdecrypt_key = BlobObj.encryptBlobCrypt(recoveryKey, customKeys.unlock);
-      }
-
       return this.getLoginToken({
         url: blob.url,
         blob,
@@ -583,12 +595,43 @@ class VaultClientClass {
       })
       .then(options => this.client.authVerifyUpdatePhone(options));
     };
+    const update = (blob, username, verifyResult) => {
+      const { phoneNumber, countryCode } = phone;
+      const {
+        authToken: newAuthToken,
+        encrypted_secretdecrypt_key,
+      } = verifyResult;
+
+      const data = {
+        countryCode,
+        phoneNumber,
+        phoneToken,
+        authToken: newAuthToken,
+        data: newBlob.encrypt(),
+        revision: newBlob.revision,
+      };
+      if (hasPaymentPin) {
+        const recoveryKey = Utils.createSecretRecoveryKey(blob.data.phone, blob.data.unlock_secret);
+        const newRecoveryKey = Utils.createSecretRecoveryKey(phone, blob.data.unlock_secret);
+        const secretCryptKey = BlobObj.decryptBlobCrypt(recoveryKey, encrypted_secretdecrypt_key);
+        data.encrypted_secretdecrypt_key = BlobObj.encryptBlobCrypt(newRecoveryKey, secretCryptKey);
+      }
+
+      return this.getLoginToken({
+        url: blob.url,
+        blob,
+        username,
+        data,
+      })
+      .then(options => this.client.authUpdatePhone(options));
+    };
 
     const { blob, username } = loginInfo;
     return this.readCustomKeysCb()
       .then((customKeys) => {
-        return _authVerifyUpdatePhone(customKeys, blob, username)
+        return verify(blob, username)
           .then(result => this.setLoginToken(result))
+          .then(result => update(blob, username, result))
           .then((resp) => {
             const { result, ...restResp } = resp;
             const resultLoginInfo = updateLoginInfo(loginInfo, result, newBlob.data);

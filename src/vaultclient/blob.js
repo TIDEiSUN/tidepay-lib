@@ -380,7 +380,7 @@ export default {
   authRequestUpdateEmail(opts) {
     const config = {
       method: 'POST',
-      url: `${opts.url}/v1/user/${opts.username}/updateEmailRequest`,
+      url: `${opts.url}/v1/user/${opts.username}/email/request`,
       data: opts.data,
       authorization: opts.loginToken,
     };
@@ -408,35 +408,49 @@ export default {
   authVerifyUpdateEmail(opts) {
     const config = {
       method: 'POST',
-      url: `${opts.url}/v1/user/${opts.username}/updateEmailVerify`,
+      url: `${opts.url}/v1/user/${opts.username}/email/verify`,
       data: opts.data,
-      authorization: opts.loginToken,
     };
 
-    try {
-      const signedRequest = new SignedRequest(config);
-      const signed = signedRequest.signHmac(opts.blob.data.auth_secret, opts.blob.id);
-      const options = Utils.makeFetchRequestOptions(config);
+    const options = Utils.makeFetchRequestOptions(config);
 
-      return fetch(signed.url, options)
-      .then((resp) => {
-        return Utils.handleFetchResponse(resp);
-      })
-      .then((data) => {
-        return Promise.resolve(data);
-      })
-      .catch((err) => {
-        return Utils.handleFetchError(err, 'authVerifyUpdateEmail');
-      });
-    } catch (err) {
-      return Promise.reject(err);
-    }
+    return fetch(config.url, options)
+    .then((resp) => {
+      return Utils.handleFetchResponse(resp);
+    })
+    .then((data) => {
+      return Promise.resolve(data);
+    })
+    .catch((err) => {
+      return Utils.handleFetchError(err, 'authVerifyUpdateEmail');
+    });
+  },
+
+  authUpdateEmail(opts) {
+    const config = {
+      method: 'POST',
+      url: `${opts.url}/v1/user/${opts.username}/email/update`,
+      data: opts.data,
+    };
+
+    const options = Utils.makeFetchRequestOptions(config);
+
+    return fetch(config.url, options)
+    .then((resp) => {
+      return Utils.handleFetchResponse(resp);
+    })
+    .then((data) => {
+      return Promise.resolve(data);
+    })
+    .catch((err) => {
+      return Utils.handleFetchError(err, 'authVerifyUpdateEmail');
+    });
   },
 
   authRequestUpdatePhone(opts) {
     const config = {
       method : 'POST',
-      url    : `${opts.url}/v1/user/${opts.username}/updatePhoneRequest`,
+      url    : `${opts.url}/v1/user/${opts.username}/phone/request`,
       data   : opts.data,
       authorization: opts.loginToken,
     };
@@ -464,7 +478,7 @@ export default {
   authVerifyUpdatePhone(opts) {
     const config = {
       method : 'POST',
-      url    : `${opts.url}/v1/user/${opts.username}/updatePhoneVerify`,
+      url    : `${opts.url}/v1/user/${opts.username}/phone/verify`,
       data   : opts.data,
       authorization: opts.loginToken,
     };
@@ -483,6 +497,34 @@ export default {
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'authVerifyUpdatePhone');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
+  },
+
+  authUpdatePhone(opts) {
+    const config = {
+      method : 'POST',
+      url    : `${opts.url}/v1/user/${opts.username}/phone/update`,
+      data   : opts.data,
+      authorization: opts.loginToken,
+    };
+
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signHmac(opts.blob.data.auth_secret, opts.blob.id);
+      const options = Utils.makeFetchRequestOptions(config);
+
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((data) => {
+        return Promise.resolve(data);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'authUpdatePhone');
       });
     } catch (err) {
       return Promise.reject(err);

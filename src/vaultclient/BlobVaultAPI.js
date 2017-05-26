@@ -290,9 +290,13 @@ BlobVaultAPI.prototype.authRequestUpdateEmail = BlobAPI.authRequestUpdateEmail;
 
 BlobVaultAPI.prototype.authVerifyUpdateEmail = BlobAPI.authVerifyUpdateEmail;
 
+BlobVaultAPI.prototype.authUpdateEmail = BlobAPI.authUpdateEmail;
+
 BlobVaultAPI.prototype.authRequestUpdatePhone = BlobAPI.authRequestUpdatePhone;
 
 BlobVaultAPI.prototype.authVerifyUpdatePhone = BlobAPI.authVerifyUpdatePhone;
+
+BlobVaultAPI.prototype.authUpdatePhone = BlobAPI.authUpdatePhone;
 
 BlobVaultAPI.prototype.authLogin = BlobAPI.authLogin;
 
