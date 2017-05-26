@@ -578,7 +578,7 @@ class VaultClientClass {
       });
   }
 
-  authVerifyAndUpdatePhone(loginInfo, phone, phoneToken, authToken, newBlob, hasPaymentPin) {
+  authVerifyAndUpdatePhone(loginInfo, phone, phoneToken, authToken, newBlob, hasPaymentPin = false) {
     const verify = (blob, username) => {
       const { phoneNumber, countryCode } = phone;
       const data = {
