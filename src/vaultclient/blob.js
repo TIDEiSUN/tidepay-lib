@@ -1,7 +1,7 @@
 import crypt from './crypt';
 import SignedRequest from './signedrequest';
 import BlobObj from './BlobObj';
-import Utils from './utils';
+import Utils from '../common/utils';
 
 /**
  * Get ripple name for a given address

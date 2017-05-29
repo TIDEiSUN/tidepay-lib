@@ -1,5 +1,5 @@
 import BlobVaultAPI from './BlobVaultAPI';
-import Errors from './Errors'
+import Errors from '../common/Errors';
 import Utils from './utils';
 import BlobAPI from './blob';
 import BlobObj from './BlobObj';

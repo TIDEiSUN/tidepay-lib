@@ -1,7 +1,7 @@
 import extend from 'extend';
 import crypt from './crypt';
 import SignedRequest from './signedrequest';
-import Utils from './utils';
+import Utils from '../common/utils';
 import Identity, { identityRoot } from './Identity';
 
 // Blob object class
@@ -322,7 +322,7 @@ export default class BlobObj {
    */
 
   filter(pointer, field, value, subcommands) {
-    var args = Array.prototype.slice.apply(arguments);
+    let args = Array.prototype.slice.apply(arguments);
 
     args.shift();
 
@@ -415,13 +415,13 @@ export default class BlobObj {
         if (Array.isArray(context[part])) {
           context[part].forEach((element, i) => {
             if (typeof element === 'object' && element.hasOwnProperty(params[0]) && element[params[0]] === params[1]) {
-              var subpointer = originalPointer + '/' + i;
-              var subcommands = _this.normalizeSubcommands(params.slice(2));
+              const subpointer = originalPointer + '/' + i;
+              const subcommands = _this.normalizeSubcommands(params.slice(2));
 
-              subcommands.forEach(function(subcommand) {
-                var op = subcommand[0];
-                var pointer = subpointer + subcommand[1];
-                _this.applyUpdate(op, pointer, subcommand.slice(2));
+              subcommands.forEach((subcommand) => {
+                const subOp = subcommand[0];
+                const subPointer = subpointer + subcommand[1];
+                _this.applyUpdate(subOp, subPointer, subcommand.slice(2));
               });
             }
           });

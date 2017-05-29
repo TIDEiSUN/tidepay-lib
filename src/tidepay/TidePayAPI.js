@@ -1,4 +1,4 @@
-import Utils from '../vaultclient/utils';
+import Utils from '../common/utils';
 import sign from './transaction/sign';
 
 export default class TidePayAPIClass {
@@ -27,22 +27,22 @@ export default class TidePayAPIClass {
 
   getGatewayAddress() {
     return fetch(`${this.isunpayrpcURL}/gatewayaddress`)
-    .then((res) => {
-      return Utils.handleFetchResponse(res);
-    })
-    .catch((err) => {
-      return Utils.handleFetchError(err, 'getGatewayAddress');
-    });
+      .then((res) => {
+        return Utils.handleFetchResponse(res);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'getGatewayAddress');
+      });
   }
 
   getCurrencies() {
     return fetch(`${this.isunpayrpcURL}/currency`)
-    .then((res) => {
-      return Utils.handleFetchResponse(res);
-    })
-    .catch((err) => {
-      return Utils.handleFetchError(err, 'getCurrencies');
-    });
+      .then((res) => {
+        return Utils.handleFetchResponse(res);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'getCurrencies');
+      });
   }
 
   /**
@@ -54,12 +54,12 @@ export default class TidePayAPIClass {
     const url = Utils.addQueryString(`${this.isunpayrpcURL}/withdrawalfee`, qs);
 
     return fetch(url)
-    .then((res) => {
-      return Utils.handleFetchResponse(res);
-    })
-    .catch((err) => {
-      return Utils.handleFetchError(err, 'getWithdrawalFee');
-    });
+      .then((res) => {
+        return Utils.handleFetchResponse(res);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'getWithdrawalFee');
+      });
   }
 
   /**
@@ -91,12 +91,12 @@ export default class TidePayAPIClass {
     const url = Utils.addQueryString(`${this.isunpayrpcURL}/exchangerate`, qs);
 
     return fetch(url)
-    .then((res) => {
-      return Utils.handleFetchResponse(res);
-    })
-    .catch((err) => {
-      return Utils.handleFetchError(err, 'previewExchange');
-    });
+      .then((res) => {
+        return Utils.handleFetchResponse(res);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'previewExchange');
+      });
   }
 
   // TODO
@@ -112,31 +112,31 @@ export default class TidePayAPIClass {
         const url = Utils.addQueryString(`${data_apiURL}/accounts/${address}/balances`, qs);
 
         return fetch(url)
-        .then((resp) => {
-          return Utils.handleFetchResponse(resp);
-        })
-        .then((json) => {
-          return json.result;
-        })
-        .catch((err) => {
-          return Utils.handleFetchError(err, 'getAccountBalances');
-        });
+          .then((resp) => {
+            return Utils.handleFetchResponse(resp);
+          })
+          .then((json) => {
+            return json.result;
+          })
+          .catch((err) => {
+            return Utils.handleFetchError(err, 'getAccountBalances');
+          });
       });
   }
 
-  getTransactionDetail(tx_hash){
+  getTransactionDetail(tx_hash) {
     return this.getDataApiUrl().
-    then((data_apiURL)=>{
-      const url=`${data_apiURL}/transactions/${tx_hash}`
+      then((data_apiURL) => {
+        const url = `${data_apiURL}/transactions/${tx_hash}`
 
-      return fetch(url).
-      then((resp)=>{
-          return Utils.handleFetchResponse(resp);
+        return fetch(url).
+          then((resp) => {
+            return Utils.handleFetchResponse(resp);
+          })
+          .catch((err) => {
+            return Utils.handleFetchError(err, 'getTransactionsDetail');
+          });
       })
-      .catch((err) => {
-          return Utils.handleFetchError(err, 'getTransactionsDetail');
-      });
-    })
   }
 
   getAccountTransactions(myAddress, options = {}) {
@@ -147,22 +147,22 @@ export default class TidePayAPIClass {
           descending: true,
           result: 'tesSUCCESS',
           currency: options.currency,
-           start:options.start,
-          end:options.end,
+          start: options.start,
+          end: options.end,
         };
         const url = Utils.addQueryString(`${data_apiURL}/accounts/${myAddress}/transactions`, qs);
 
         return fetch(url)
-        .then((resp) => {
-          return Utils.handleFetchResponse(resp);
-        })
-        .catch((err) => {
-          return Utils.handleFetchError(err, 'getAccountTransactions');
-        });
+          .then((resp) => {
+            return Utils.handleFetchResponse(resp);
+          })
+          .catch((err) => {
+            return Utils.handleFetchError(err, 'getAccountTransactions');
+          });
       });
   }
 
-  
+
 
   sendPayment(sourceAccount, payment) {
     const pconfig = {
@@ -276,12 +276,12 @@ export default class TidePayAPIClass {
         const url = Utils.addQueryString(`${data_apiURL}/accounts/${address}/pockets`, options);
 
         return fetch(url)
-        .then((resp) => {
-          return Utils.handleFetchResponse(resp);
-        })
-        .catch((err) => {
-          return Utils.handleFetchError(err, 'getAccountPockets');
-        });
+          .then((resp) => {
+            return Utils.handleFetchResponse(resp);
+          })
+          .catch((err) => {
+            return Utils.handleFetchError(err, 'getAccountPockets');
+          });
       });
   }
 
@@ -295,12 +295,12 @@ export default class TidePayAPIClass {
         const url = Utils.addQueryString(`${data_apiURL}/accounts/${address}/pockets`, options);
 
         return fetch(url)
-        .then((resp) => {
-          return Utils.handleFetchResponse(resp);
-        })
-        .catch((err) => {
-          return Utils.handleFetchError(err, 'getAccountPocket');
-        });
+          .then((resp) => {
+            return Utils.handleFetchResponse(resp);
+          })
+          .catch((err) => {
+            return Utils.handleFetchError(err, 'getAccountPocket');
+          });
       });
   }
 
