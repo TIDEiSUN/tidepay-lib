@@ -8,6 +8,7 @@ import sign from './transaction/sign';
 import submit from './transaction/submit';
 import prepareTrustline from './transaction/trustline';
 import errors from './common/errors';
+import RangeSet from './common/rangeset';
 
 export default class TidePayDAPIClass {
   constructor(url) {
@@ -18,6 +19,7 @@ export default class TidePayDAPIClass {
     this.ws = null;
     this.notifyTransactionCallback = null;
     this._ledgerVersion = null;
+    this._availableLedgerVersions = new RangeSet();
     this._fee_base = null;
     this._fee_ref = null;
 
@@ -32,7 +34,6 @@ export default class TidePayDAPIClass {
   }
 
   static buildOptions(method, params) {
-    console.log('buildOptions for', method);
     return {
       method: 'POST',
       headers: {
@@ -87,6 +88,16 @@ export default class TidePayDAPIClass {
     const options = TidePayDAPIClass.buildOptions('submit', params);
     return fetch(this.tidepaydURL, options).then(resp => TidePayDAPIClass.handleResponse(resp));
   }
+  doTx(params) {
+    const options = TidePayDAPIClass.buildOptions('tx', params);
+    return fetch(this.tidepaydURL, options).then(resp => TidePayDAPIClass.handleResponse(resp));
+  }
+  webSocketState() {
+    const websocketStatus = ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'];
+    return {
+      websocket: websocketStatus[this.ws.readyState],
+    };
+  }
   connectWebsocket(options) {
     // TODO: review on options
     const { wsPath, wsReconnectInterval, logger } = options;
@@ -119,7 +130,15 @@ export default class TidePayDAPIClass {
           if (!this._ledgerVersion) {
             logger.info('First ledger:', jsondata.ledger_index);
           }
+          // update ledger version
           this._ledgerVersion = Number(jsondata.ledger_index);
+          if (jsondata.validated_ledgers) {
+            this._availableLedgerVersions.reset();
+            this._availableLedgerVersions.parseAndAddRanges(jsondata.validated_ledgers);
+          } else {
+            this._availableLedgerVersions.addValue(this._ledgerVersion);
+          }
+          // update fee
           this._fee_base = Number(jsondata.fee_base);
           this._fee_ref = Number(jsondata.fee_ref);
           break;
@@ -155,6 +174,8 @@ export default class TidePayDAPIClass {
     };
   }
   disconnectWebsocket() {
+    logger.info('Last ledger:', this._ledgerVersion);
+    this._ledgerVersion = null;
     if (this.ws) {
       this.ws.close();
       this.ws = null;
@@ -162,6 +183,9 @@ export default class TidePayDAPIClass {
   }
   getLedgerVersion() {
     return Promise.resolve(this._ledgerVersion);
+  }
+  hasLedgerVersions(lowLedgerVersion, highLedgerVersion) {
+    return Promise.resolve(this._availableLedgerVersions.containsRange(lowLedgerVersion, highLedgerVersion || this._ledgerVersion));
   }
   getFeeBase() {
     return Promise.resolve(this._fee_base);
