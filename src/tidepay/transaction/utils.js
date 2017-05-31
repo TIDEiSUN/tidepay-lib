@@ -84,7 +84,6 @@ function prepareTransaction(txJSON, api, instructions) {
       account: account
     };
     return api.doAccountInfo(request).then(function (response) {
-      console.log('response.account_data', response.account_data);
       txJSON.Sequence = response.account_data.Sequence;
       return txJSON;
     });

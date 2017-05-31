@@ -1,11 +1,13 @@
 import fetch from 'isomorphic-fetch';
 import { w3cwebsocket as W3CWebSocket } from 'websocket';
 import Utils from '../common/utils';
-import generateAddressAPI from './offline/generate-address'
+import generateAddressAPI from './offline/generate-address';
 import preparePayment from './transaction/payment';
 import prepareSettings from './transaction/settings';
+import sign from './transaction/sign';
 import submit from './transaction/submit';
 import prepareTrustline from './transaction/trustline';
+import errors from './common/errors';
 
 export default class TidePayDAPIClass {
   constructor(url) {
@@ -25,10 +27,12 @@ export default class TidePayDAPIClass {
     this.prepareSettings = prepareSettings;
     this.prepareTrustline = prepareTrustline;
     this.generateAddress = generateAddressAPI;
+    this.sign = sign;
     this.submit = submit;
   }
 
   static buildOptions(method, params) {
+    console.log('buildOptions for', method);
     return {
       method: 'POST',
       headers: {
@@ -44,39 +48,51 @@ export default class TidePayDAPIClass {
       ),
     };
   }
+  static handleResponse(response) {
+    return Utils.handleFetchResponse(response)
+      .then((json) => {
+        if (json.result.status === 'error') {
+          return Promise.reject(new errors.RippledError(json.result.error));
+        } else if (json.result.status === 'success') {
+          return Promise.resolve(json.result);
+        }
+        return Promise.reject(new errors.ResponseFormatError(`unrecognized status: ${json.result.status}`));
+      });
+  }
   doAccountInfo(params) {
     const options = TidePayDAPIClass.buildOptions('account_info', params);
-    return fetch(this.tidepaydURL, options).then(resp => Utils.handleFetchResponse(resp));
+    return fetch(this.tidepaydURL, options).then(resp => TidePayDAPIClass.handleResponse(resp));
   }
   doAccountLines(params) {
     const options = TidePayDAPIClass.buildOptions('account_lines', params);
-    return fetch(this.tidepaydURL, options).then(resp => Utils.handleFetchResponse(resp));
+    return fetch(this.tidepaydURL, options).then(resp => TidePayDAPIClass.handleResponse(resp));
   }
   doLedger(params) {
     const options = TidePayDAPIClass.buildOptions('ledger', params);
-    return fetch(this.tidepaydURL, options).then(resp => Utils.handleFetchResponse(resp));
+    return fetch(this.tidepaydURL, options).then(resp => TidePayDAPIClass.handleResponse(resp));
   }
   doNorippleCheck(params) {
     const options = TidePayDAPIClass.buildOptions('noripple_check', params);
-    return fetch(this.tidepaydURL, options).then(resp => Utils.handleFetchResponse(resp));
+    return fetch(this.tidepaydURL, options).then(resp => TidePayDAPIClass.handleResponse(resp));
   }
   doRandom() {
     const options = TidePayDAPIClass.buildOptions('random', {});
-    return fetch(this.tidepaydURL, options).then(resp => Utils.handleFetchResponse(resp));
+    return fetch(this.tidepaydURL, options).then(resp => TidePayDAPIClass.handleResponse(resp));
   }
   doServerInfo() {
     const options = TidePayDAPIClass.buildOptions('server_info', {});
-    return fetch(this.tidepaydURL, options).then(resp => Utils.handleFetchResponse(resp));
+    return fetch(this.tidepaydURL, options).then(resp => TidePayDAPIClass.handleResponse(resp));
   }
   doSubmit(params) {
     const options = TidePayDAPIClass.buildOptions('submit', params);
-    return fetch(this.tidepaydURL, options).then(resp => Utils.handleFetchResponse(resp));
+    return fetch(this.tidepaydURL, options).then(resp => TidePayDAPIClass.handleResponse(resp));
   }
   connectWebsocket(options) {
     // TODO: review on options
     const { wsPath, wsReconnectInterval, logger } = options;
     this.ws = new W3CWebSocket(wsPath);
     this.ws.onopen = () => {
+      logger.debug('tidepay-lib ws onopen');
       const message = {
         id: 'Gateway monitor',
         command: 'subscribe',
@@ -87,8 +103,8 @@ export default class TidePayDAPIClass {
       } catch (e) { logger.error(e); }
     };
     this.ws.onclose = () => {
+      logger.debug('tidepay-lib ws onclose');
       logger.info('Last ledger:', this._ledgerVersion);
-      logger.info('ws closed');
       // TODO: queue task to open the websocket again
       setTimeout(() => {
         logger.info('ws reconnect');
@@ -96,6 +112,7 @@ export default class TidePayDAPIClass {
       }, wsReconnectInterval);
     };
     this.ws.onmessage = (e) => {
+      // logger.debug('tidepay-lib ws onmessage:', e.data);
       const jsondata = JSON.parse(e.data);
       switch (jsondata.type) {
         case 'ledgerClosed': {
@@ -134,8 +151,14 @@ export default class TidePayDAPIClass {
       }
     };
     this.ws.onerror = () => {
-      logger.error('ws error:');
+      logger.error('tidepay-lib ws onerror');
     };
+  }
+  disconnectWebsocket() {
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
   }
   getLedgerVersion() {
     return Promise.resolve(this._ledgerVersion);
@@ -147,3 +170,5 @@ export default class TidePayDAPIClass {
     return Promise.resolve(this._fee_ref);
   }
 }
+
+export { errors };
