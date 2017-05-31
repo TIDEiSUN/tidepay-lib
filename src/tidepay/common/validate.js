@@ -1,4 +1,4 @@
-'use strict';
+'use strict'; // eslint-disable-line strict
 
 var _ = require('lodash');
 var ValidationError = require('./errors').ValidationError;
@@ -32,20 +32,26 @@ module.exports = {
   getOrders: _.partial(validateOptions, 'getOrdersParameters'),
   getOrderbook: _.partial(validateOptions, 'getOrderbookParameters'),
   getTransaction: _.partial(validateOptions, 'getTransactionParameters'),
+  getPaymentChannel: _.partial(validateOptions, 'getPaymentChannelParameters'),
   getLedger: _.partial(validateOptions, 'getLedgerParameters'),
   preparePayment: _.partial(schemaValidate, 'preparePaymentParameters'),
   prepareOrder: _.partial(schemaValidate, 'prepareOrderParameters'),
   prepareOrderCancellation: _.partial(schemaValidate, 'prepareOrderCancellationParameters'),
   prepareTrustline: _.partial(schemaValidate, 'prepareTrustlineParameters'),
   prepareSettings: _.partial(schemaValidate, 'prepareSettingsParameters'),
-  prepareSuspendedPaymentCreation: _.partial(schemaValidate, 'prepareSuspendedPaymentCreationParameters'),
-  prepareSuspendedPaymentCancellation: _.partial(schemaValidate, 'prepareSuspendedPaymentCancellationParameters'),
-  prepareSuspendedPaymentExecution: _.partial(schemaValidate, 'prepareSuspendedPaymentExecutionParameters'),
+  prepareEscrowCreation: _.partial(schemaValidate, 'prepareEscrowCreationParameters'),
+  prepareEscrowCancellation: _.partial(schemaValidate, 'prepareEscrowCancellationParameters'),
+  prepareEscrowExecution: _.partial(schemaValidate, 'prepareEscrowExecutionParameters'),
+  preparePaymentChannelCreate: _.partial(schemaValidate, 'preparePaymentChannelCreateParameters'),
+  preparePaymentChannelFund: _.partial(schemaValidate, 'preparePaymentChannelFundParameters'),
+  preparePaymentChannelClaim: _.partial(schemaValidate, 'preparePaymentChannelClaimParameters'),
   sign: _.partial(schemaValidate, 'signParameters'),
   combine: _.partial(schemaValidate, 'combineParameters'),
   submit: _.partial(schemaValidate, 'submitParameters'),
   computeLedgerHash: _.partial(schemaValidate, 'computeLedgerHashParameters'),
   generateAddress: _.partial(schemaValidate, 'generateAddressParameters'),
+  signPaymentChannelClaim: _.partial(schemaValidate, 'signPaymentChannelClaimParameters'),
+  verifyPaymentChannelClaim: _.partial(schemaValidate, 'verifyPaymentChannelClaimParameters'),
   apiOptions: _.partial(schemaValidate, 'api-options'),
   instructions: _.partial(schemaValidate, 'instructions')
 };

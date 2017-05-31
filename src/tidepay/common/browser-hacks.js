@@ -1,4 +1,4 @@
-'use strict';
+'use strict'; // eslint-disable-line strict
 
 function setPrototypeOf(object, prototype) {
   // Object.setPrototypeOf not supported on Internet Explorer 9

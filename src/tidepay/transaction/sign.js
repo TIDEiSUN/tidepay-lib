@@ -1,13 +1,13 @@
-'use strict';
+'use strict'; // eslint-disable-line strict
 
-var errors = require('../common/errors');
 var keypairs = require('../tidepay-keypairs');
 var binary = require('../tidepay-binary-codec');
+var utils = require('./utils');
 
 var _require = require('../tidepay-hashes'),
     computeBinaryTransactionHash = _require.computeBinaryTransactionHash;
 
-var validate = require('../common/validate');
+var validate = utils.common.validate;
 
 function computeSignature(tx, privateKey, signAs) {
   var signingData = signAs ? binary.encodeForMultisigning(tx, signAs) : binary.encodeForSigning(tx);
@@ -23,7 +23,7 @@ function sign(txJSON, secret) {
 
   var tx = JSON.parse(txJSON);
   if (tx.TxnSignature || tx.Signers) {
-    throw new errors.ValidationError('txJSON must not contain "TxnSignature" or "Signers" properties');
+    throw new utils.common.errors.ValidationError('txJSON must not contain "TxnSignature" or "Signers" properties');
   }
 
   var keypair = keypairs.deriveKeypair(secret);
