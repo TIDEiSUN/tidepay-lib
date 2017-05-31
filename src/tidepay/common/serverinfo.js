@@ -12,8 +12,8 @@ function renameKeys(object, mapping) {
   });
 }
 
-function getServerInfo(connection) {
-  return connection.request({ command: 'server_info' }).then(function (response) {
+function getServerInfo(api) {
+  return api.doServerInfo().then(function (response) {
     var info = convertKeysFromSnakeCaseToCamelCase(response.info);
     renameKeys(info, { hostid: 'hostID' });
     if (info.validatedLedger) {
@@ -35,8 +35,8 @@ function computeFeeFromServerInfo(cushion, serverInfo) {
   return (Number(serverInfo.validatedLedger.baseFeeXRP) * Number(serverInfo.loadFactor) * cushion).toString();
 }
 
-function getFee(connection, cushion) {
-  return getServerInfo(connection).then(_.partial(computeFeeFromServerInfo, cushion));
+function getFee(api, cushion) {
+  return getServerInfo(api).then(_.partial(computeFeeFromServerInfo, cushion));
 }
 
 module.exports = {

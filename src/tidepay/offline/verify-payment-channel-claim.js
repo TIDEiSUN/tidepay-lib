@@ -1,8 +1,8 @@
 'use strict'; // eslint-disable-line strict
 
 var common = require('../common');
-var keypairs = require('ripple-keypairs');
-var binary = require('ripple-binary-codec');
+var keypairs = require('../tidepay-keypairs');
+var binary = require('../tidepay-binary-codec');
 var validate = common.validate,
     xrpToDrops = common.xrpToDrops;
 

@@ -46,7 +46,7 @@ function prepareTransaction(txJSON, api, instructions) {
       return Promise.resolve(txJSON);
     }
     var offset = instructions.maxLedgerVersionOffset !== undefined ? instructions.maxLedgerVersionOffset : 3;
-    return api.connection.getLedgerVersion().then(function (ledgerVersion) {
+    return api.getLedgerVersion().then(function (ledgerVersion) {
       txJSON.LastLedgerSequence = ledgerVersion + offset;
       return txJSON;
     });
@@ -59,8 +59,8 @@ function prepareTransaction(txJSON, api, instructions) {
       return Promise.resolve(txJSON);
     }
     var cushion = api._feeCushion;
-    return common.serverInfo.getFee(api.connection, cushion).then(function (fee) {
-      return api.connection.getFeeRef().then(function (feeRef) {
+    return common.serverInfo.getFee(api, cushion).then(function (fee) {
+      return api.getFeeRef().then(function (feeRef) {
         var extraFee = txJSON.TransactionType !== 'EscrowFinish' || txJSON.Fulfillment === undefined ? 0 : cushion * feeRef * (32 + Math.floor(new Buffer(txJSON.Fulfillment, 'hex').length / 16));
         var feeDrops = common.xrpToDrops(fee);
         if (instructions.maxFee !== undefined) {
@@ -81,10 +81,10 @@ function prepareTransaction(txJSON, api, instructions) {
       return Promise.resolve(txJSON);
     }
     var request = {
-      command: 'account_info',
       account: account
     };
-    return api.connection.request(request).then(function (response) {
+    return api.doAccountInfo(request).then(function (response) {
+      console.log('response.account_data', response.account_data);
       txJSON.Sequence = response.account_data.Sequence;
       return txJSON;
     });

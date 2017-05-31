@@ -1,6 +1,6 @@
 'use strict'; // eslint-disable-line strict
 
-var keypairs = require('ripple-keypairs');
+var keypairs = require('../tidepay-keypairs');
 var common = require('../common');
 var errors = common.errors,
     validate = common.validate;

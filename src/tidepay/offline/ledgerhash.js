@@ -2,7 +2,7 @@
 
 var _ = require('lodash');
 var common = require('../common');
-var hashes = require('ripple-hashes');
+var hashes = require('../tidepay-hashes');
 
 function convertLedgerHeader(header) {
   return {
