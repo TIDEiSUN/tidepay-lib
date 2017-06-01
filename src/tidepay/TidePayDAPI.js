@@ -1,7 +1,9 @@
 import fetch from 'isomorphic-fetch';
 import { w3cwebsocket as W3CWebSocket } from 'websocket';
 import Utils from '../common/utils';
-import generateAddressAPI from './offline/generate-address';
+import common from './common';
+import { generateAddressAPI } from './offline/generate-address';
+import getAccountInfo from './ledger/accountinfo';
 import getTransaction from './ledger/transaction';
 import getTransactions from './ledger/transactions';
 import getTrustlines from './ledger/trustlines';
@@ -29,6 +31,7 @@ export default class TidePayDAPIClass {
 
     // rpc
     this._feeCushion = 1.2;
+    this.getAccountInfo = getAccountInfo;
     this.getTransaction = getTransaction;
     this.getTransactions = getTransactions;
     this.getTrustlines = getTrustlines;
@@ -199,6 +202,9 @@ export default class TidePayDAPIClass {
   }
   hasLedgerVersions(lowLedgerVersion, highLedgerVersion) {
     return Promise.resolve(this._availableLedgerVersions.containsRange(lowLedgerVersion, highLedgerVersion || this._ledgerVersion));
+  }
+  getServerInfo() {
+    return common.serverInfo.getServerInfo(this);
   }
   getFeeBase() {
     return Promise.resolve(this._fee_base);
