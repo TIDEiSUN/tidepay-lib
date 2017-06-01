@@ -1,4 +1,4 @@
-import VaultClientClass, { Utils, Errors } from './vaultclient/VaultClient';
+import VaultClientClass, { VCUtils, Errors } from './vaultclient/VaultClient';
 import TidePayAPIClass from './tidepay/TidePayAPI';
 import TidePayDAPIClass, { errors as TidePayErrors } from './tidepay/TidePayDAPI';
 import WAValidator from './cryptovalidator/wallet_address_validator';
@@ -9,7 +9,7 @@ export default {
   TidePayDAPIClass,
   TidePayErrors,
   WAValidator,
-  Utils,  
+  VCUtils,
   Errors,
 };
 
@@ -19,6 +19,6 @@ export {
   TidePayDAPIClass,
   TidePayErrors,
   WAValidator,
-  Utils,
+  VCUtils,
   Errors,
 };

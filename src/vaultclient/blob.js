@@ -2,6 +2,7 @@ import crypt from './crypt';
 import SignedRequest from './signedrequest';
 import BlobObj from './BlobObj';
 import Utils from '../common/utils';
+import VCUtils from './utils';
 
 /**
  * Get ripple name for a given address
@@ -222,7 +223,7 @@ export default {
     opts.blob.id  = opts.keys.id;
     opts.blob.key = opts.keys.crypt;
 
-    const recoveryKey = Utils.createRecoveryKey(opts.blob.email);
+    const recoveryKey = VCUtils.createRecoveryKey(opts.blob.email);
 
     const config = {
       method : 'POST',
@@ -258,7 +259,7 @@ export default {
 
   changePaymentPin(opts) {
     const { old_secret_id, masterkey, blob, keys, loginToken } = opts;
-    const secretRecoveryKey = Utils.createSecretRecoveryKey(blob.data.phone, blob.data.unlock_secret);
+    const secretRecoveryKey = VCUtils.createSecretRecoveryKey(blob.data.phone, blob.data.unlock_secret);
     const encryptedSecret = blob.encryptSecret(keys.unlock, masterkey);
     const encryptedUnlock = BlobObj.encryptBlobCrypt(secretRecoveryKey, keys.unlock);
     const config = {
@@ -319,7 +320,7 @@ export default {
 
     const encrypted_secret = blob.encryptSecret(keys.unlock, masterkey);
 
-    const recoveryKey = Utils.createRecoveryKey(email);
+    const recoveryKey = VCUtils.createRecoveryKey(email);
 
     const config = {
       method: 'POST',
@@ -557,7 +558,7 @@ export default {
       phone       : null,
     };
 
-    const recoveryKey = Utils.createRecoveryKey(opts.email);
+    const recoveryKey = VCUtils.createRecoveryKey(opts.email);
 
     // post to the blob vault to create
     const config = Utils.makeFetchRequestOptions({

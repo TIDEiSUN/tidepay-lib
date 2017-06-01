@@ -1,6 +1,6 @@
 import BlobVaultAPI from './BlobVaultAPI';
 import Errors from '../common/Errors';
-import Utils from './utils';
+import VCUtils from './utils';
 import BlobAPI from './blob';
 import BlobObj from './BlobObj';
 import CustomKeys from './customkeys';
@@ -517,8 +517,8 @@ class VaultClientClass {
         encrypted_blobdecrypt_key,
       } = verifyResult;
 
-      const recoveryKey = Utils.createRecoveryKey(oldEmail);
-      const newRecoveryKey = Utils.createRecoveryKey(email);
+      const recoveryKey = VCUtils.createRecoveryKey(oldEmail);
+      const newRecoveryKey = VCUtils.createRecoveryKey(email);
       const blobCryptKey = BlobObj.decryptBlobCrypt(recoveryKey, encrypted_blobdecrypt_key);
 
       const options = {
@@ -611,8 +611,8 @@ class VaultClientClass {
         revision: newBlob.revision,
       };
       if (hasPaymentPin) {
-        const recoveryKey = Utils.createSecretRecoveryKey(blob.data.phone, blob.data.unlock_secret);
-        const newRecoveryKey = Utils.createSecretRecoveryKey(phone, blob.data.unlock_secret);
+        const recoveryKey = VCUtils.createSecretRecoveryKey(blob.data.phone, blob.data.unlock_secret);
+        const newRecoveryKey = VCUtils.createSecretRecoveryKey(phone, blob.data.unlock_secret);
         const secretCryptKey = BlobObj.decryptBlobCrypt(recoveryKey, encrypted_secretdecrypt_key);
         data.encrypted_secretdecrypt_key = BlobObj.encryptBlobCrypt(newRecoveryKey, secretCryptKey);
       }
@@ -650,7 +650,7 @@ class VaultClientClass {
         const customKeys = new CustomKeys(authInfo, null);
 
         customKeys.id = blob_id;
-        const recoveryKey = Utils.createRecoveryKey(email);
+        const recoveryKey = VCUtils.createRecoveryKey(email);
         try {
           customKeys.crypt = BlobObj.decryptBlobCrypt(recoveryKey, encrypted_blobdecrypt_key);
         } catch (err) {
@@ -684,7 +684,7 @@ class VaultClientClass {
 
         if (encrypted_secretdecrypt_key) {
           // payment pin has been set
-          const recoveryKey = Utils.createSecretRecoveryKey(phone, unlockSecret);
+          const recoveryKey = VCUtils.createSecretRecoveryKey(phone, unlockSecret);
           try {
             newCustomKeys.secretId = secret_id;
             newCustomKeys.unlock = BlobObj.decryptBlobCrypt(recoveryKey, encrypted_secretdecrypt_key);
@@ -850,4 +850,4 @@ class VaultClientClass {
 }
 
 export default VaultClientClass;
-export { Utils, Errors };
+export { VCUtils, Errors };
