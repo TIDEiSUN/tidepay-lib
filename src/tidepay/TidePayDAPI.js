@@ -2,18 +2,22 @@ import fetch from 'isomorphic-fetch';
 import { w3cwebsocket as W3CWebSocket } from 'websocket';
 import Utils from '../common/utils';
 import generateAddressAPI from './offline/generate-address';
+import getTransaction from './ledger/transaction';
+import getTransactions from './ledger/transactions';
+import getTrustlines from './ledger/trustlines';
 import preparePayment from './transaction/payment';
 import prepareSettings from './transaction/settings';
 import sign from './transaction/sign';
 import submit from './transaction/submit';
 import prepareTrustline from './transaction/trustline';
 import errors from './common/errors';
-import RangeSet from './common/rangeset';
+import { RangeSet } from './common/rangeset';
 
 export default class TidePayDAPIClass {
-  constructor(url) {
+  constructor(url, logger) {
     // basic
     this.tidepaydURL = `${url}/`;
+    this.logger = logger;
 
     // websocket
     this.ws = null;
@@ -25,6 +29,9 @@ export default class TidePayDAPIClass {
 
     // rpc
     this._feeCushion = 1.2;
+    this.getTransaction = getTransaction;
+    this.getTransactions = getTransactions;
+    this.getTrustlines = getTrustlines;
     this.preparePayment = preparePayment;
     this.prepareSettings = prepareSettings;
     this.prepareTrustline = prepareTrustline;
@@ -68,6 +75,10 @@ export default class TidePayDAPIClass {
     const options = TidePayDAPIClass.buildOptions('account_lines', params);
     return fetch(this.tidepaydURL, options).then(resp => TidePayDAPIClass.handleResponse(resp));
   }
+  doAccountTx(params) {
+    const options = TidePayDAPIClass.buildOptions('account_tx', params);
+    return fetch(this.tidepaydURL, options).then(resp => TidePayDAPIClass.handleResponse(resp));
+  }
   doLedger(params) {
     const options = TidePayDAPIClass.buildOptions('ledger', params);
     return fetch(this.tidepaydURL, options).then(resp => TidePayDAPIClass.handleResponse(resp));
@@ -100,7 +111,9 @@ export default class TidePayDAPIClass {
   }
   connectWebsocket(options) {
     // TODO: review on options
-    const { wsPath, wsReconnectInterval, logger } = options;
+    const { wsPath, wsReconnectInterval } = options;
+    const logger = this.logger;
+
     this.ws = new W3CWebSocket(wsPath);
     this.ws.onopen = () => {
       logger.debug('tidepay-lib ws onopen');
@@ -174,7 +187,7 @@ export default class TidePayDAPIClass {
     };
   }
   disconnectWebsocket() {
-    logger.info('Last ledger:', this._ledgerVersion);
+    this.logger.info('Last ledger:', this._ledgerVersion);
     this._ledgerVersion = null;
     if (this.ws) {
       this.ws.close();

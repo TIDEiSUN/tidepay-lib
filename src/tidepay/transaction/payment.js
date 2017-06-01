@@ -105,7 +105,7 @@ function createPaymentTransaction(address, paymentArgument) {
       txJSON.Paths = JSON.parse(payment.paths);
     }
   } else if (payment.allowPartialPayment === true) {
-    throw new ValidationError('XRP to XRP payments cannot be partial payments');
+    throw new ValidationError('XTP to XTP payments cannot be partial payments');
   }
 
   return txJSON;
