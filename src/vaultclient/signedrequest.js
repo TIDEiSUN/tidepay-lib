@@ -38,12 +38,24 @@ function copyObjectWithSortedKeys(object) {
     for (let i in keysSorted) {
       key = keysSorted[i];
       if (Object.prototype.hasOwnProperty.call(object, key)) {
-        newObj[key] = copyObjectWithSortedKeys(object[key]);
+        const obj = copyObjectWithSortedKeys(object[key]);
+        if (obj !== undefined) {
+          newObj[key] = obj;
+        }
       }
     }
     return newObj;
   } else if (Array.isArray(object)) {
     return object.map(copyObjectWithSortedKeys);
+  } else if (object instanceof File) {
+    // TODO temp skip file type
+    return undefined;
+  } else if (object instanceof FormData) {
+    const convertedObject = {};
+    for (const [key, value] of object.entries()) {
+      convertedObject[key] = value;
+    }
+    return copyObjectWithSortedKeys(convertedObject);
   } else {
     return object;
   }

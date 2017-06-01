@@ -787,6 +787,19 @@ class VaultClientClass {
     .then(resolved => Promise.resolve({ ...resolved, loginInfo: newLoginInfo }));
   }
 
+  uploadBankAccountVerification(loginInfo, bankAccountInfo, transactionDateRange, value, currency, receiptPhoto) {
+    return this.getLoginToken({
+      blob: loginInfo.blob,
+      bankAccountInfo,
+      transactionDateRange,
+      value,
+      currency,
+      receiptPhoto,
+    })
+    .then(options => this.client.uploadBankAccountVerification(options))
+    .then(result => this.setLoginToken(result));
+  }
+
   deleteBankAccount(loginInfo, bankAccountInfo, updateBlobDataCallback) {
     const newLoginInfo = cloneLoginInfo(loginInfo);
     updateBlobDataCallback(newLoginInfo.blob.data);

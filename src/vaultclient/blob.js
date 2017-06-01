@@ -697,6 +697,41 @@ export default {
     }
   },
 
+  uploadBankAccountVerification(opts) {
+    const formData = new FormData();
+    formData.append('bank_account_info', JSON.stringify(opts.bankAccountInfo));
+    formData.append('transaction_time_range_start', opts.transactionDateRange.start);
+    formData.append('transaction_time_range_end', opts.transactionDateRange.end);
+    formData.append('amount', opts.value);
+    formData.append('currency', opts.currency);
+    formData.append('receipt_photo', opts.receiptPhoto);
+    const config = {
+      method: 'POST',
+      url: `${opts.blob.url}/v1/blob/${opts.blob.id}/bankaccount/verify`,
+      data: formData,
+      authorization: opts.loginToken,
+    };
+
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signHmac(opts.blob.data.auth_secret, opts.blob.id);
+      const options = Utils.makeFetchRequestOptions(config);
+
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((data) => {
+        return Promise.resolve(data);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'uploadBankAccountVerification');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
+  },
+
   /**
    * Delete bank account
    * @param {object} opts

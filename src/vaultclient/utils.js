@@ -1,3 +1,5 @@
+import sjcl from './sjcl';
+
 export default {
   createRecoveryKey(email) {
     return `@@@RecoveR!!!!!${email}!!`;
@@ -18,5 +20,11 @@ export default {
 
   checkPhoneVerified(accountLevel) {
     return accountLevel === 'B' || accountLevel === 'A';
+  },
+
+  createHashedBankAccount(bankAccountInfo) {
+    const infoStr = JSON.stringify(bankAccountInfo);
+    const hashedBitArray = sjcl.hash.sha256.hash(infoStr);
+    return sjcl.codec.hex.fromBits(hashedBitArray);
   },
 };

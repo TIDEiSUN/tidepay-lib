@@ -275,6 +275,8 @@ BlobVaultAPI.prototype.blockAccount = BlobAPI.blockAccount;
 
 BlobVaultAPI.prototype.addBankAccount = BlobAPI.addBankAccount;
 
+BlobVaultAPI.prototype.uploadBankAccountVerification = BlobAPI.uploadBankAccountVerification;
+
 BlobVaultAPI.prototype.deleteBankAccount = BlobAPI.deleteBankAccount;
 
 BlobVaultAPI.prototype.handleRecovery = BlobAPI.handleRecovery;
