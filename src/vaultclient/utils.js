@@ -51,4 +51,8 @@ export default {
     const base32 = sjcl.codec.base32.fromBits(hexBits);
     return base32.replace(/=/g, '');
   },
+
+  getOtpAuthUrl(username, key) {
+    return `otpauth://totp/${username}?secret=${key}&issuer=tidepay`;
+  },
 };
