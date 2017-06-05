@@ -847,6 +847,195 @@ export default {
     }
   },
 
+  enable2FAGoogle(opts) {
+    const config = {
+      method: 'POST',
+      url: `${opts.blob.url}/v1/blob/${opts.blob.id}/2fa/gauth`,
+      data: {
+        key: opts.gKey,
+        gToken: opts.gToken,
+      },
+      authorization: opts.loginToken,
+    };
+
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signHmac(opts.blob.data.auth_secret, opts.blob.id);
+      const options = Utils.makeFetchRequestOptions(config);
+
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((data) => {
+        return Promise.resolve(data);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'enable2FAGoogle');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
+  },
+
+  enable2FASmsRequest(opts) {
+    const config = {
+      method: 'POST',
+      url: `${opts.blob.url}/v1/blob/${opts.blob.id}/2fa/sms/request`,
+      data: {
+        phoneNumber: opts.phoneNumber,
+        countryCode: opts.countryCode,
+      },
+      authorization: opts.loginToken,
+    };
+
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signHmac(opts.blob.data.auth_secret, opts.blob.id);
+      const options = Utils.makeFetchRequestOptions(config);
+
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((data) => {
+        return Promise.resolve(data);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'enable2FASmsRequest');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
+  },
+
+  enable2FASms(opts) {
+    const config = {
+      method: 'POST',
+      url: `${opts.blob.url}/v1/blob/${opts.blob.id}/2fa/sms`,
+      data: {
+        phoneNumber: opts.phoneNumber,
+        countryCode: opts.countryCode,
+        smsToken: opts.smsToken,
+        authToken: opts.authToken,
+      },
+      authorization: opts.loginToken,
+    };
+
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signHmac(opts.blob.data.auth_secret, opts.blob.id);
+      const options = Utils.makeFetchRequestOptions(config);
+
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((data) => {
+        return Promise.resolve(data);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'enable2FASms');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
+  },
+
+  disable2FAGoogle(opts) {
+    const config = {
+      method: 'POST',
+      url: `${opts.blob.url}/v1/blob/${opts.blob.id}/2fa/disable`,
+      data: {
+        gToken: opts.gToken,
+      },
+      authorization: opts.loginToken,
+    };
+
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signHmac(opts.blob.data.auth_secret, opts.blob.id);
+      const options = Utils.makeFetchRequestOptions(config);
+
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((data) => {
+        return Promise.resolve(data);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'disable2FAGoogle');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
+  },
+
+  disable2FASmsRequest(opts) {
+    const config = {
+      method: 'POST',
+      url: `${opts.blob.url}/v1/blob/${opts.blob.id}/2fa/disable/request`,
+      data: {
+        phoneNumber: opts.phoneNumber,
+        countryCode: opts.countryCode,
+      },
+      authorization: opts.loginToken,
+    };
+
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signHmac(opts.blob.data.auth_secret, opts.blob.id);
+      const options = Utils.makeFetchRequestOptions(config);
+
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((data) => {
+        return Promise.resolve(data);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'disble2FASmsRequest');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
+  },
+
+  disable2FASms(opts) {
+    const config = {
+      method: 'POST',
+      url: `${opts.blob.url}/v1/blob/${opts.blob.id}/2fa/disable`,
+      data: {
+        phoneNumber: opts.phoneNumber,
+        countryCode: opts.countryCode,
+        smsToken: opts.smsToken,
+        authToken: opts.authToken,
+      },
+      authorization: opts.loginToken,
+    };
+
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signHmac(opts.blob.data.auth_secret, opts.blob.id);
+      const options = Utils.makeFetchRequestOptions(config);
+
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((data) => {
+        return Promise.resolve(data);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'disable2FASms');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
+  },
+
   uploadPhotos(opts) {
     const config = {
       method: 'POST',

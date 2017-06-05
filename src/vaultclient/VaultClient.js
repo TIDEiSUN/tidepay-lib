@@ -364,6 +364,79 @@ class VaultClientClass {
     .then(result => Promise.resolve({ ...result, loginInfo }));
   }
 
+  enable2FAGoogle(loginInfo, key, token) {
+    const { blob } = loginInfo;
+    return this.getLoginToken({
+      gKey: key,
+      gToken: token,
+      blob,
+    })
+    .then(options => BlobAPI.enable2FAGoogle(options))
+    .then(result => this.setLoginToken(result));
+  }
+
+  enable2FASmsRequest(loginInfo, phone) {
+    const { blob } = loginInfo;
+    const { phoneNumber, countryCode } = phone;
+    return this.getLoginToken({
+      phoneNumber,
+      countryCode,
+      blob,
+    })
+    .then(options => BlobAPI.enable2FASmsRequest(options))
+    .then(result => this.setLoginToken(result));
+  }
+
+  enable2FASms(loginInfo, phone, smsToken, authToken) {
+    const { blob } = loginInfo;
+    const { phoneNumber, countryCode } = phone;
+    return this.getLoginToken({
+      phoneNumber,
+      countryCode,
+      smsToken,
+      authToken,
+      blob,
+    })
+    .then(options => BlobAPI.enable2FASms(options))
+    .then(result => this.setLoginToken(result));
+  }
+
+  disable2FAGoogle(loginInfo, token) {
+    const { blob } = loginInfo;
+    return this.getLoginToken({
+      gToken: token,
+      blob,
+    })
+    .then(options => BlobAPI.disable2FAGoogle(options))
+    .then(result => this.setLoginToken(result));
+  }
+
+  disable2FASmsRequest(loginInfo, phone) {
+    const { blob } = loginInfo;
+    const { phoneNumber, countryCode } = phone;
+    return this.getLoginToken({
+      phoneNumber,
+      countryCode,
+      blob,
+    })
+    .then(options => BlobAPI.disable2FASmsRequest(options))
+    .then(result => this.setLoginToken(result));
+  }
+
+  disable2FASms(loginInfo, phone, smsToken, authToken) {
+    const { blob } = loginInfo;
+    const { phoneNumber, countryCode } = phone;
+    return this.getLoginToken({
+      phoneNumber,
+      countryCode,
+      smsToken,
+      authToken,
+      blob,
+    })
+    .then(options => BlobAPI.disable2FASms(options))
+    .then(result => this.setLoginToken(result));
+  }
+
   authLoginAccount(authInfo, data) {
     const options = {
       url: authInfo.blobvault,
