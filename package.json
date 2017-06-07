@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "node_modules/.bin/webpack --progress --color --watch",
+    "build:node": "node_modules/.bin/webpack --progress --color -p --config webpack.config.node.js",
     "build:prod": "node_modules/.bin/webpack --progress --color -p",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -31,7 +32,6 @@
     "jsonschema": "^1.1.1",
     "jssha": "^2.2.0",
     "websocket": "^1.0.24",
-    "whatwg-fetch": "^2.0.3",
     "x-address-codec": "^0.7.2"
   },
   "devDependencies": {

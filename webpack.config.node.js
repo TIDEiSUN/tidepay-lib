@@ -1,11 +1,20 @@
 const webpack = require('webpack');
 const path = require('path');
+const fs = require('fs');
+
+const nodeModules = {};
+fs.readdirSync('node_modules')
+  .filter(x => ['.bin'].indexOf(x) === -1)
+  .forEach((mod) => {
+    nodeModules[mod] = `commonjs ${mod}`;
+  });
 
 module.exports = {
   devtool: 'eval-source-map',
+  target: 'node',
   entry: [
     'whatwg-fetch',
-    path.join(__dirname, 'src', 'index.js'),
+    path.join(__dirname, 'src', 'index.node.js'),
   ],
   output: {
     libraryTarget: 'umd',
@@ -29,6 +38,7 @@ module.exports = {
     }
     ]
   },
+  externals: nodeModules,
   plugins: [
     new webpack.DefinePlugin({
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV)
