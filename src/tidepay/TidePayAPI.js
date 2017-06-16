@@ -83,21 +83,9 @@ export default class TidePayAPIClass {
       });
   }
 
-  previewExchange(fromCurrency, fromValue, toCurrency) {
-    const qs = {
-      base: fromCurrency,
-      symbols: toCurrency,
-    };
-    const url = Utils.addQueryString(`${this.isunpayrpcURL}/exchangerate`, qs);
-
-    return fetch(url)
-      .then((res) => {
-        return Utils.handleFetchResponse(res);
-      })
-      .catch((err) => {
-        return Utils.handleFetchError(err, 'previewExchange');
-      });
-  }
+  // TODO
+  // previewExchange(fromCurrency, fromValue, toCurrency) {
+  // }
 
   // TODO
   // submigExchangeRequest() {
