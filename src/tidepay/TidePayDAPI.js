@@ -16,14 +16,14 @@ import errors from './common/errors';
 import { RangeSet } from './common/rangeset';
 
 export default class TidePayDAPIClass {
-  constructor(url, logger) {
+  constructor(url, logger, notifyTransactionCallback = null) {
     // basic
     this.tidepaydURL = `${url}/`;
     this.logger = logger;
 
     // websocket
     this.ws = null;
-    this.notifyTransactionCallback = null;
+    this.notifyTransactionCallback = notifyTransactionCallback;
     this._ledgerVersion = null;
     this._availableLedgerVersions = new RangeSet();
     this._fee_base = null;
