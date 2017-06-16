@@ -267,40 +267,34 @@ export default class TidePayAPIClass {
     return this.sendPayment(account, payment);
   }
 
-  getAccountPockets(gatewayAddress, address) {
-    return this.getDataApiUrl()
-      .then((data_apiURL) => {
-        const options = {
-          counterparty: gatewayAddress,
-        };
-        const url = Utils.addQueryString(`${data_apiURL}/accounts/${address}/pockets`, options);
+  getAccountPockets(address) {
+    const options = {
+      tidepayAddress: address,
+    };
+    const url = Utils.addQueryString(`${this.isunpayrpcURL}/pocket`, options);
 
-        return fetch(url)
-          .then((resp) => {
-            return Utils.handleFetchResponse(resp);
-          })
-          .catch((err) => {
-            return Utils.handleFetchError(err, 'getAccountPockets');
-          });
+    return fetch(url)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'getAccountPockets');
       });
   }
 
-  getAccountPocket(gatewayAddress, address, currency) {
-    return this.getDataApiUrl()
-      .then((data_apiURL) => {
-        const options = {
-          counterparty: gatewayAddress,
-          currency,
-        };
-        const url = Utils.addQueryString(`${data_apiURL}/accounts/${address}/pockets`, options);
+  getAccountPocket(address, currency) {
+    const options = {
+      tidepayAddress: address,
+      currency,
+    };
+    const url = Utils.addQueryString(`${this.isunpayrpcURL}/pocket`, options);
 
-        return fetch(url)
-          .then((resp) => {
-            return Utils.handleFetchResponse(resp);
-          })
-          .catch((err) => {
-            return Utils.handleFetchError(err, 'getAccountPocket');
-          });
+    return fetch(url)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'getAccountPocket');
       });
   }
 
