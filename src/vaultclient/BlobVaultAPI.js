@@ -316,3 +316,7 @@ BlobVaultAPI.prototype.getEncryptedSecretByBlobId = BlobAPI.getEncryptedSecretBy
 BlobVaultAPI.prototype.getEncryptedSecretBySecretId = BlobAPI.getEncryptedSecretBySecretId;
 
 BlobVaultAPI.prototype.changePaymentPin = BlobAPI.changePaymentPin;
+
+BlobVaultAPI.prototype.getUserJournals = BlobAPI.getUserJournals;
+
+BlobVaultAPI.prototype.setUserJournalStatus = BlobAPI.setUserJournalStatus;

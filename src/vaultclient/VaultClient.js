@@ -933,6 +933,28 @@ class VaultClientClass {
       return Promise.reject(err);
     });
   }
+
+  getUserJournals(loginInfo, username, offset, limit) {
+    return this.getLoginToken({
+      blob: loginInfo.blob,
+      username,
+      offset,
+      limit,
+    })
+    .then(options => this.client.getUserJournals(options))
+    .then(result => this.setLoginToken(result));
+  }
+
+  setUserJournalStatus(loginInfo, username, journalId, read = true) {
+    return this.getLoginToken({
+      blob: loginInfo.blob,
+      username,
+      journalId,
+      read,
+    })
+    .then(options => this.client.setUserJournalStatus(options))
+    .then(result => this.setLoginToken(result));
+  }
 }
 
 export default VaultClientClass;

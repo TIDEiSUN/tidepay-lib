@@ -4,6 +4,27 @@ import BlobObj from './BlobObj';
 import Utils from '../common/utils';
 import VCUtils from './utils';
 
+function parseContentRange(header) {
+  const [range, total] = header.split('/');
+  return { range, total };
+}
+
+function parseLinkHeader(header) {
+  const linkRE = /<.+\?(.+)>; rel="(.+)"/;
+  function reduceQueryString(json, qs) {
+    const pair = qs.split('=');
+    const [key, value] = pair;
+    return { ...json, [key]: decodeURIComponent(value || '') };      
+  }
+  function reduceLink(json, link) {
+    const match = linkRE.exec(link);
+    const [, qs, rel] = match;
+    const qsJson = qs.split('&').reduce(reduceQueryString, {});
+    return { ...json, [rel]: qsJson };
+  }
+  return header.split(',').reduce(reduceLink, {});
+}
+
 /**
  * Get ripple name for a given address
  */
@@ -1077,6 +1098,70 @@ export default {
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'logoutAccount');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
+  },
+
+  getUserJournals(opts) {
+    const { blob, username, offset, limit, loginToken } = opts;
+    const qs = { offset, limit };
+    const config = {
+      method: 'GET',
+      url: Utils.addQueryString(`${blob.url}/v1/user/${username}/journals`, qs),
+      authorization: loginToken,
+    };
+
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signHmac(blob.data.auth_secret, blob.id);
+      const options = Utils.makeFetchRequestOptions(config);
+
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return Promise.all([
+          Utils.handleFetchResponse(resp),
+          resp.headers,
+        ]);
+      })
+      .then(([data, headers]) => {
+        const { total } = parseContentRange(headers.get('Content-Range'));
+        const link = parseLinkHeader(headers.get('Link'));
+        return Promise.resolve({ ...data, total, link });
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'getUserJournals');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
+  },
+
+  setUserJournalStatus(opts) {
+    const { blob, username, journalId, read, loginToken } = opts;
+    const config = {
+      method: 'PUT',
+      url: `${blob.url}/v1/user/${username}/journals/${journalId}/status`,
+      authorization: loginToken,
+      data: {
+        read,
+      },
+    };
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signHmac(blob.data.auth_secret, blob.id);
+      const options = Utils.makeFetchRequestOptions(config);
+
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((data) => {
+        return Promise.resolve(data);
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'setUserJournalStatus');
       });
     } catch (err) {
       return Promise.reject(err);
