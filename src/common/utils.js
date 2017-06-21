@@ -37,6 +37,13 @@ export default {
     return resp.json();
   },
 
+  handleFetchResponseAndHeaders(resp) {
+    return this.handleFetchResponse(resp)
+      .then((json) => {
+        return { data: json, headers: resp.headers };
+      });
+  },
+
   addQueryString(baseUrl, queryString) {
     const qsArray = [];
     Object.keys(queryString).forEach((key) => {

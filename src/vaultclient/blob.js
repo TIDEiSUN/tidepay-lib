@@ -4,12 +4,12 @@ import BlobObj from './BlobObj';
 import Utils from '../common/utils';
 import VCUtils from './utils';
 
-function parseContentRange(header) {
-  const [range, total] = header.split('/');
+function parseContentRange(headers) {
+  const [range, total] = headers.get('Content-Range').split('/');
   return { range, total };
 }
 
-function parseLinkHeader(header) {
+function parseLinkHeader(headers) {
   const linkRE = /<.+\?(.+)>; rel="(.+)"/;
   function reduceQueryString(json, qs) {
     const pair = qs.split('=');
@@ -22,7 +22,32 @@ function parseLinkHeader(header) {
     const qsJson = qs.split('&').reduce(reduceQueryString, {});
     return { ...json, [rel]: qsJson };
   }
-  return header.split(',').reduce(reduceLink, {});
+  return headers.get('Link').split(',').reduce(reduceLink, {});
+}
+
+function parseAuthorizationHeader(headers) {
+  const authorization = headers.get('Authorization');
+  if (!authorization) {
+    return undefined;
+  }
+  const splitted = authorization.split(' ');
+  if (splitted[0] !== 'Bearer') {
+    return undefined;
+  }
+  return splitted.length < 2 ? null : splitted[1];
+}
+
+function fetchResponseData(resp) {
+  return Utils.handleFetchResponse(resp);
+}
+
+function fetchResponseDataAndLoginToken(resp) {
+  return Utils.handleFetchResponse(resp)
+    .then((data) => {
+      const { headers } = resp;
+      const loginToken = parseAuthorizationHeader(headers);
+      return { data, loginToken };
+    });
 }
 
 /**
@@ -38,10 +63,7 @@ export default {
     const gconfig = Utils.makeFetchRequestOptions(config);
     return fetch(`${url}/v1/blob/${blobId}`, gconfig)
     .then((resp) => {
-      return Utils.handleFetchResponse(resp);
-    })
-    .then((data) => {
-      return Promise.resolve(data);
+      return fetchResponseDataAndLoginToken(resp);
     })
     .catch((err) => {
       return Utils.handleFetchError(err, 'getBlob');
@@ -56,10 +78,7 @@ export default {
     const gconfig = Utils.makeFetchRequestOptions(config);
     return fetch(`${url}/v1/secret/blob/${blobId}`, gconfig)
     .then((resp) => {
-      return Utils.handleFetchResponse(resp);
-    })
-    .then((data) => {
-      return Promise.resolve(data);
+      return fetchResponseDataAndLoginToken(resp);
     })
     .catch((err) => {
       return Utils.handleFetchError(err, 'getEncryptedSecretByBlobId');
@@ -74,10 +93,7 @@ export default {
     const gconfig = Utils.makeFetchRequestOptions(config);
     return fetch(`${url}/v1/secret/${secretId}`, gconfig)
     .then((resp) => {
-      return Utils.handleFetchResponse(resp);
-    })
-    .then((data) => {
-      return Promise.resolve(data);
+      return fetchResponseDataAndLoginToken(resp);
     })
     .catch((err) => {
       return Utils.handleFetchError(err, 'getEncryptedSecretBySecretId');
@@ -89,10 +105,7 @@ export default {
     const url = `${opts.url}/v1/user/auth/login`;
     return fetch(url, config)
     .then((resp) => {
-      return Utils.handleFetchResponse(resp);
-    })
-    .then((data) => {
-      return Promise.resolve(data);
+      return fetchResponseDataAndLoginToken(resp);
     })
     .catch((err) => {
       return Utils.handleFetchError(err, 'authLogin');
@@ -104,10 +117,7 @@ export default {
     const url = `${opts.url}/v1/user/auth/unblock`;
     return fetch(url, config)
     .then((resp) => {
-      return Utils.handleFetchResponse(resp);
-    })
-    .then((data) => {
-      return Promise.resolve(data);
+      return fetchResponseDataAndLoginToken(resp);
     })
     .catch((err) => {
       return Utils.handleFetchError(err, 'authUnblockAccount');
@@ -119,10 +129,7 @@ export default {
     const url = `${opts.url}/v1/user/auth/recover`;
     return fetch(url, config)
     .then((resp) => {
-      return Utils.handleFetchResponse(resp);
-    })
-    .then((data) => {
-      return Promise.resolve(data);
+      return fetchResponseDataAndLoginToken(resp);
     })
     .catch((err) => {
       return Utils.handleFetchError(err, 'authRecoverAccount');
@@ -134,10 +141,7 @@ export default {
     const url = `${opts.url}/v1/user/auth/recoverSecret`;
     return fetch(url, config)
     .then((resp) => {
-      return Utils.handleFetchResponse(resp);
-    })
-    .then((data) => {
-      return Promise.resolve(data);
+      return fetchResponseDataAndLoginToken(resp);
     })
     .catch((err) => {
       return Utils.handleFetchError(err, 'authRecoverSecret');
@@ -216,10 +220,7 @@ export default {
 
       return fetch(signed.url, options)
       .then((resp) => {
-        return Utils.handleFetchResponse(resp);
-      })
-      .then((data) => {
-        return Promise.resolve(data);
+        return fetchResponseDataAndLoginToken(resp);
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'updateBlob');
@@ -265,10 +266,7 @@ export default {
 
       return fetch(signed.url, options)
       .then((resp) => {
-        return Utils.handleFetchResponse(resp);
-      })
-      .then((data) => {
-        return Promise.resolve(data);
+        return fetchResponseDataAndLoginToken(resp);
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'updateKeys');
@@ -302,10 +300,7 @@ export default {
 
       return fetch(signed.url, options)
       .then((resp) => {
-        return Utils.handleFetchResponse(resp);
-      })
-      .then((data) => {
-        return Promise.resolve(data);
+        return fetchResponseDataAndLoginToken(resp);
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'updateSecretKeys');
@@ -363,10 +358,14 @@ export default {
 
       return fetch(signed.url, options)
       .then((resp) => {
-        return Utils.handleFetchResponse(resp);
+        return fetchResponseDataAndLoginToken(resp);
       })
-      .then((data) => {
-        return Promise.resolve({ ...data, newBlobData: blob.data });
+      .then((resp) => {
+        const { data, loginToken } = resp;
+        return {
+          data: { ...data, newBlobData: blob.data },
+          loginToken,
+        };
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'authActivateAccount');
@@ -389,7 +388,7 @@ export default {
     const url = `${opts.url}/v1/user/${username}/auth/verify`;
     return fetch(url, config)
     .then((resp) => {
-      return Utils.handleFetchResponse(resp);
+      return fetchResponseData(resp);
     })
     .then((data) => {
       return Promise.resolve(data);
@@ -414,10 +413,7 @@ export default {
 
       return fetch(signed.url, options)
       .then((resp) => {
-        return Utils.handleFetchResponse(resp);
-      })
-      .then((data) => {
-        return Promise.resolve(data);
+        return fetchResponseDataAndLoginToken(resp);
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'authRequestUpdateEmail');
@@ -438,10 +434,7 @@ export default {
 
     return fetch(config.url, options)
     .then((resp) => {
-      return Utils.handleFetchResponse(resp);
-    })
-    .then((data) => {
-      return Promise.resolve(data);
+      return fetchResponseData(resp);
     })
     .catch((err) => {
       return Utils.handleFetchError(err, 'authVerifyUpdateEmail');
@@ -459,10 +452,7 @@ export default {
 
     return fetch(config.url, options)
     .then((resp) => {
-      return Utils.handleFetchResponse(resp);
-    })
-    .then((data) => {
-      return Promise.resolve(data);
+      return fetchResponseData(resp);
     })
     .catch((err) => {
       return Utils.handleFetchError(err, 'authVerifyUpdateEmail');
@@ -484,10 +474,7 @@ export default {
 
       return fetch(signed.url, options)
       .then((resp) => {
-        return Utils.handleFetchResponse(resp);
-      })
-      .then((data) => {
-        return Promise.resolve(data);
+        return fetchResponseDataAndLoginToken(resp);
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'authRequestUpdatePhone');
@@ -512,10 +499,7 @@ export default {
 
       return fetch(signed.url, options)
       .then((resp) => {
-        return Utils.handleFetchResponse(resp);
-      })
-      .then((data) => {
-        return Promise.resolve(data);
+        return fetchResponseDataAndLoginToken(resp);
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'authVerifyUpdatePhone');
@@ -540,10 +524,7 @@ export default {
 
       return fetch(signed.url, options)
       .then((resp) => {
-        return Utils.handleFetchResponse(resp);
-      })
-      .then((data) => {
-        return Promise.resolve(data);
+        return fetchResponseDataAndLoginToken(resp);
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'authUpdatePhone');
@@ -597,7 +578,7 @@ export default {
     });
     return fetch(`${opts.url}/v1/user/auth`, config)
     .then((resp) => {
-      return Utils.handleFetchResponse(resp);
+      return fetchResponseData(resp);
     })
     .then((data) => {
       blob.identity_id = data.identity_id;
@@ -630,10 +611,7 @@ export default {
 
       return fetch(signed.url, { method: 'DELETE' })
       .then((resp) => {
-        return Utils.handleFetchResponse(resp);
-      })
-      .then((data) => {
-        return Promise.resolve(data);
+        return fetchResponseDataAndLoginToken(resp);
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'deleteBlob');
@@ -666,10 +644,7 @@ export default {
 
       return fetch(signed.url, options)
       .then((resp) => {
-        return Utils.handleFetchResponse(resp);
-      })
-      .then((data) => {
-        return Promise.resolve(data);
+        return fetchResponseDataAndLoginToken(resp);
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'blockAccount');
@@ -705,10 +680,7 @@ export default {
 
       return fetch(signed.url, options)
       .then((resp) => {
-        return Utils.handleFetchResponse(resp);
-      })
-      .then((data) => {
-        return Promise.resolve(data);
+        return fetchResponseDataAndLoginToken(resp);
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'addBankAccount');
@@ -740,10 +712,7 @@ export default {
 
       return fetch(signed.url, options)
       .then((resp) => {
-        return Utils.handleFetchResponse(resp);
-      })
-      .then((data) => {
-        return Promise.resolve(data);
+        return fetchResponseDataAndLoginToken(resp);
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'uploadBankAccountVerification');
@@ -779,10 +748,7 @@ export default {
 
       return fetch(signed.url, options)
       .then((resp) => {
-        return Utils.handleFetchResponse(resp);
-      })
-      .then((data) => {
-        return Promise.resolve(data);
+        return fetchResponseDataAndLoginToken(resp);
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'deleteBankAccount');
@@ -814,10 +780,7 @@ export default {
       const options = Utils.makeFetchRequestOptions(config);
       return fetch(signed.url, options)
       .then((resp) => {
-        return Utils.handleFetchResponse(resp);
-      })
-      .then((data) => {
-        return Promise.resolve(data);
+        return fetchResponseDataAndLoginToken(resp);
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'get2FA');
@@ -855,10 +818,7 @@ export default {
 
       return fetch(signed.url, options)
       .then((resp) => {
-        return Utils.handleFetchResponse(resp);
-      })
-      .then((data) => {
-        return Promise.resolve(data);
+        return fetchResponseDataAndLoginToken(resp);
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'set2FA');
@@ -886,10 +846,7 @@ export default {
 
       return fetch(signed.url, options)
       .then((resp) => {
-        return Utils.handleFetchResponse(resp);
-      })
-      .then((data) => {
-        return Promise.resolve(data);
+        return fetchResponseDataAndLoginToken(resp);
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'enable2FAGoogle');
@@ -917,10 +874,7 @@ export default {
 
       return fetch(signed.url, options)
       .then((resp) => {
-        return Utils.handleFetchResponse(resp);
-      })
-      .then((data) => {
-        return Promise.resolve(data);
+        return fetchResponseDataAndLoginToken(resp);
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'enable2FASmsRequest');
@@ -950,10 +904,7 @@ export default {
 
       return fetch(signed.url, options)
       .then((resp) => {
-        return Utils.handleFetchResponse(resp);
-      })
-      .then((data) => {
-        return Promise.resolve(data);
+        return fetchResponseDataAndLoginToken(resp);
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'enable2FASms');
@@ -980,10 +931,7 @@ export default {
 
       return fetch(signed.url, options)
       .then((resp) => {
-        return Utils.handleFetchResponse(resp);
-      })
-      .then((data) => {
-        return Promise.resolve(data);
+        return fetchResponseDataAndLoginToken(resp);
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'disable2FAGoogle');
@@ -1011,10 +959,7 @@ export default {
 
       return fetch(signed.url, options)
       .then((resp) => {
-        return Utils.handleFetchResponse(resp);
-      })
-      .then((data) => {
-        return Promise.resolve(data);
+        return fetchResponseDataAndLoginToken(resp);
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'disble2FASmsRequest');
@@ -1044,10 +989,7 @@ export default {
 
       return fetch(signed.url, options)
       .then((resp) => {
-        return Utils.handleFetchResponse(resp);
-      })
-      .then((data) => {
-        return Promise.resolve(data);
+        return fetchResponseDataAndLoginToken(resp);
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'disable2FASms');
@@ -1067,10 +1009,7 @@ export default {
     const url = `${opts.blob.url}/v1/blob/${opts.blob.id}/uploadId`;
     return fetch(url, options)
       .then((resp) => {
-        return Utils.handleFetchResponse(resp);
-      })
-      .then((data) => {
-        return Promise.resolve(data);
+        return fetchResponseDataAndLoginToken(resp);
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'uploadPhotos');
@@ -1091,10 +1030,7 @@ export default {
 
       return fetch(signed.url, options)
       .then((resp) => {
-        return Utils.handleFetchResponse(resp);
-      })
-      .then((data) => {
-        return Promise.resolve(data);
+        return fetchResponseDataAndLoginToken(resp);
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'logoutAccount');
@@ -1120,15 +1056,17 @@ export default {
 
       return fetch(signed.url, options)
       .then((resp) => {
-        return Promise.all([
-          Utils.handleFetchResponse(resp),
-          resp.headers,
-        ]);
-      })
-      .then(([data, headers]) => {
-        const { total } = parseContentRange(headers.get('Content-Range'));
-        const link = parseLinkHeader(headers.get('Link'));
-        return Promise.resolve({ ...data, total, link });
+        return fetchResponseData(resp)
+          .then((data) => {
+            const { headers } = resp;
+            const { total } = parseContentRange(headers);
+            const link = parseLinkHeader(headers);
+            const refreshedLoginToken = parseAuthorizationHeader(headers);
+            return {
+              data: { ...data, total, link },
+              loginToken: refreshedLoginToken,
+            };
+          });
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'getUserJournals');
@@ -1155,10 +1093,7 @@ export default {
 
       return fetch(signed.url, options)
       .then((resp) => {
-        return Utils.handleFetchResponse(resp);
-      })
-      .then((data) => {
-        return Promise.resolve(data);
+        return fetchResponseDataAndLoginToken(resp);
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'setUserJournalStatus');

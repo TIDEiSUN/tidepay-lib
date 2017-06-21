@@ -143,7 +143,8 @@ class VaultClientClass {
   }
 
   setLoginToken(result) {
-    const { loginToken, ...rest } = result;
+    const { loginToken, data } = result;
+    const { loginToken: loginTokenInOldWay, ...rest } = data;
     if (loginToken !== undefined) {
       return this.writeLoginTokenCb(loginToken)
         .then(() => rest);
@@ -152,15 +153,12 @@ class VaultClientClass {
   }
 
   setAuthLoginToken(resp) {
-    const { result } = resp;
-    if (result) {
-      const { loginToken } = result;
-      if (loginToken !== undefined) {
-        return this.writeLoginTokenCb(loginToken)
-          .then(() => resp);
-      }
+    const { loginToken, data } = resp;
+    if (loginToken !== undefined) {
+      return this.writeLoginTokenCb(loginToken)
+        .then(() => data);
     }
-    return Promise.resolve(resp);
+    return Promise.resolve(data);
   }
 
   unlockAccount(unlockSecret, paymentPin) {
