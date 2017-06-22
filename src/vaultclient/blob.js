@@ -5,7 +5,11 @@ import Utils from '../common/utils';
 import VCUtils from './utils';
 
 function parseContentRange(headers) {
-  const [range, total] = headers.get('Content-Range').split('/');
+  const contentRange = headers.get('Content-Range');
+  if (!contentRange) {
+    return {};
+  }
+  const [range, total] = contentRange.split('/');
   return { range, total };
 }
 
@@ -18,11 +22,18 @@ function parseLinkHeader(headers) {
   }
   function reduceLink(json, link) {
     const match = linkRE.exec(link);
+    if (!match) {
+      return json;
+    }
     const [, qs, rel] = match;
     const qsJson = qs.split('&').reduce(reduceQueryString, {});
     return { ...json, [rel]: qsJson };
   }
-  return headers.get('Link').split(',').reduce(reduceLink, {});
+  const link = headers.get('Link');
+  if (!link) {
+    return {};
+  }
+  return link.split(',').reduce(reduceLink, {});
 }
 
 function parseAuthorizationHeader(headers) {
