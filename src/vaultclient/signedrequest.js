@@ -1,9 +1,9 @@
-import sjcl from './sjcl'; 
-import { Seed } from './ripple-npm/seed';
-import parser from 'url';
 import extend from 'extend';
 import querystring from 'querystring';
+import parser from 'url';
 import Crypt from './crypt';
+import binary from '../tidepay/tidepay-binary-codec';
+import keyPairs from '../tidepay/tidepay-keypairs';
 
 // from npm extend
 function isPlainObject(obj) {
@@ -77,46 +77,14 @@ const dateAsIso8601 = (function () {
   };
 }());
 
-/**
- *  Produce a Base64-encoded signature on the given hex-encoded hash.
- *
- *  Note that this signature uses the signing function that includes
- *  a recovery_factor to be able to extract the public key from the signature
- *  without having to pass the public key along with the signature.
- *
- *  @static
- *
- *  @param {bitArray|Hex-encoded String} hash
- *  @param {sjcl.ecc.ecdsa.secretKey|Any format accepted by Seed.from_json} secret_key
- *  @param {RippleAddress} [The first key] account Field to specify the signing account. 
- *    If this is omitted the first account produced by the secret generator will be used.
- *  @returns {Base64-encoded String} signature
- */
-function signHash(hash, secret_key, account) {
+const MAGIC_BYTES = 'Tidepay Signed Message:\n';
 
-  if (typeof hash === 'string' && /^[0-9a-fA-F]+$/.test(hash)) {
-    hash = sjcl.codec.hex.toBits(hash);
-  }
-
-  if (typeof hash !== 'object' || hash.length <= 0 || typeof hash[0] !== 'number') {
-    throw new Error('Hash must be a bitArray or hex-encoded string');
-  }
-
-  if (!(secret_key instanceof sjcl.ecc.ecdsa.secretKey)) {
-    secret_key = Seed.from_json(secret_key).get_key(account)._secret;
-  }
-
-  var signature_bits = secret_key.signWithRecoverablePublicKey(hash);
-  var signature_base64 = sjcl.codec.base64.fromBits(signature_bits);
-
-  return signature_base64;
-};
-
-const MAGIC_BYTES = 'Ripple Signed Message:\n';
-
-function signMessage(message, secret_key, account) {
-  return signHash(sjcl.hash.sha512.hash(MAGIC_BYTES + message), secret_key, account);
-};
+function signMessage(message, secret) {
+  const keypair = keyPairs.deriveKeypair(secret);
+  const messageHex = binary.encodeForSigning({ message: MAGIC_BYTES + message });
+  const signature = keyPairs.sign(messageHex, keypair.privateKey);
+  return { signature, publicKey: keypair.publicKey };
+}
 
 export default class SignedRequest {
   constructor(config) {
@@ -207,13 +175,14 @@ export default class SignedRequest {
     const date          = dateAsIso8601();
     const signatureType = 'RIPPLE1-ECDSA-SHA512';
     const stringToSign  = this.getStringToSign(parsed, date, signatureType);
-    const signature     = signMessage(stringToSign, secretKey);
+    const { signature, publicKey } = signMessage(stringToSign, secretKey);
 
     const query = querystring.stringify({
       signature: Crypt.base64ToBase64Url(signature),
       signature_date: date,
       signature_blob_id: blob_id,
       signature_account: account,
+      signature_public_key: publicKey,
       signature_type: signatureType,
     });
 
@@ -222,35 +191,4 @@ export default class SignedRequest {
     return config;
   }
 
-/**
- * Asymmetric signed request for vault recovery
- * @param {Object} config
- * @param {Object} secretKey
- * @param {Object} username
- */
-  signAsymmetricRecovery(secretKey, username) {
-    const config = extend(true, {}, this.config);
-
-    // Parse URL
-    const parsed        = parser.parse(config.url);
-    const date          = dateAsIso8601();
-    const signatureType = 'RIPPLE1-ECDSA-SHA512';
-    const stringToSign  = this.getStringToSign(parsed, date, signatureType);
-    const signature     = signMessage(stringToSign, secretKey);
-
-    const query = querystring.stringify({
-      signature: Crypt.base64ToBase64Url(signature),
-      signature_date: date,
-      signature_username: username,
-      signature_type: signatureType,
-    });
-
-    config.url += (parsed.search ? '&' : '?') + query;
-
-    return config;
-  }
 }
-
-// XXX Add methods for verifying requests
-// SignedRequest.prototype.verifySignatureHmac
-// SignedRequest.prototype.verifySignatureAsymetric

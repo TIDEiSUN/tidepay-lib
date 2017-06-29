@@ -1,7 +1,6 @@
-import sjcl from './sjcl'; 
-import { Seed } from './ripple-npm/seed';
 import extend from 'extend';
-import jacobi from './sjcl-custom/sjcl-jacobi.js';
+import sjcl from './sjcl';
+import jacobi from './sjcl-custom/sjcl-jacobi';
 import Utils from '../common/utils';
 
 const SJCL_PARANOIA_256_BITS = 6;
@@ -160,12 +159,6 @@ const Crypt = {
   },
 
 /**
- * Imported from ripple-client
- */
-
-
-
-/**
  * Encrypt data
  *
  * @param {string} key
@@ -244,21 +237,22 @@ const Crypt = {
  */
 
   signString(secret, data) {
-    var hmac = new sjcl.misc.hmac(sjcl.codec.hex.toBits(secret), sjcl.hash.sha512);
+    const hmac = new sjcl.misc.hmac(sjcl.codec.hex.toBits(secret), sjcl.hash.sha512);
     return sjcl.codec.hex.fromBits(hmac.mac(data));
   },
 
 /**
- * Create an an accout recovery key
+ * Create an an account recovery key
  *
  * @param {string} secret
  */
 
   deriveRecoveryEncryptionKeyFromSecret(secret) {
-    var seed = Seed.from_json(secret).to_bits();
-    var hmac = new sjcl.misc.hmac(seed, sjcl.hash.sha512);
-    var key  = hmac.mac('ripple/hmac/recovery_encryption_key/v1');
-    key      = sjcl.bitArray.bitSlice(key, 0, 256);
+    const hash = sjcl.hash.sha512.hash(sjcl.codec.utf8String.toBits(secret));
+    const seed = sjcl.bitArray.bitSlice(hash, 0, 128);
+    const hmac = new sjcl.misc.hmac(seed, sjcl.hash.sha512);
+    let key = hmac.mac('ripple/hmac/recovery_encryption_key/v1');
+    key = sjcl.bitArray.bitSlice(key, 0, 256);
     return sjcl.codec.hex.fromBits(key);
   },
 

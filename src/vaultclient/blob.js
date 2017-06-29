@@ -357,7 +357,7 @@ export default {
         email,
         authToken,
         data: blob.encrypt(),
-        encrypted_secret: encrypted_secret,
+        encrypted_secret,
         encrypted_blobdecrypt_key: BlobObj.encryptBlobCrypt(recoveryKey, keys.crypt),
       },
     };
