@@ -1051,7 +1051,7 @@ export default {
     }
   },
 
-  getUserJournals(opts) {
+  getUserJournalsPagination(opts) {
     const { blob, username, offset, limit, loginToken } = opts;
     const qs = { offset, limit };
     const config = {
@@ -1075,6 +1075,41 @@ export default {
             const refreshedLoginToken = parseAuthorizationHeader(headers);
             return {
               data: { ...data, total, link },
+              loginToken: refreshedLoginToken,
+            };
+          });
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'getUserJournals');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
+  },
+
+  getUserJournals(opts) {
+    const { blob, username, marker, limit, loginToken } = opts;
+    const qs = { marker, limit };
+    const config = {
+      method: 'GET',
+      url: Utils.addQueryString(`${blob.url}/v1/user/${username}/journals`, qs),
+      authorization: loginToken,
+    };
+
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signHmac(blob.data.auth_secret, blob.id);
+      const options = Utils.makeFetchRequestOptions(config);
+
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return fetchResponseData(resp)
+          .then((data) => {
+            const { headers } = resp;
+            const link = parseLinkHeader(headers);
+            const refreshedLoginToken = parseAuthorizationHeader(headers);
+            return {
+              data: { ...data, link },
               loginToken: refreshedLoginToken,
             };
           });

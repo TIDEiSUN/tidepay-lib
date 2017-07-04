@@ -932,11 +932,22 @@ class VaultClientClass {
     });
   }
 
-  getUserJournals(loginInfo, username, offset, limit) {
+  getUserJournalsPagination(loginInfo, username, offset, limit) {
     return this.getLoginToken({
       blob: loginInfo.blob,
       username,
       offset,
+      limit,
+    })
+    .then(options => this.client.getUserJournalsPagination(options))
+    .then(result => this.setLoginToken(result));
+  }
+
+  getUserJournals(loginInfo, username, limit, marker) {
+    return this.getLoginToken({
+      blob: loginInfo.blob,
+      username,
+      marker,
       limit,
     })
     .then(options => this.client.getUserJournals(options))
