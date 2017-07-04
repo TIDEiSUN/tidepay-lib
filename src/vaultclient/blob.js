@@ -1052,8 +1052,8 @@ export default {
   },
 
   getUserJournalsPagination(opts) {
-    const { blob, username, offset, limit, loginToken } = opts;
-    const qs = { offset, limit };
+    const { blob, username, offset, limit, filter, loginToken } = opts;
+    const qs = { offset, limit, messageId: filter };
     const config = {
       method: 'GET',
       url: Utils.addQueryString(`${blob.url}/v1/user/${username}/journals`, qs),
@@ -1088,8 +1088,8 @@ export default {
   },
 
   getUserJournals(opts) {
-    const { blob, username, marker, limit, loginToken } = opts;
-    const qs = { marker, limit };
+    const { blob, username, marker, limit, filter, loginToken } = opts;
+    const qs = { marker, limit, messageId: filter };
     const config = {
       method: 'GET',
       url: Utils.addQueryString(`${blob.url}/v1/user/${username}/journals`, qs),
@@ -1113,6 +1113,32 @@ export default {
               loginToken: refreshedLoginToken,
             };
           });
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'getUserJournals');
+      });
+    } catch (err) {
+      return Promise.reject(err);
+    }
+  },
+
+  getUserJournalsUnreadCount(opts) {
+    const { blob, username, filter, loginToken } = opts;
+    const qs = { messageId: filter };
+    const config = {
+      method: 'GET',
+      url: Utils.addQueryString(`${blob.url}/v1/user/${username}/journals/unreadCount`, qs),
+      authorization: loginToken,
+    };
+
+    try {
+      const signedRequest = new SignedRequest(config);
+      const signed = signedRequest.signHmac(blob.data.auth_secret, blob.id);
+      const options = Utils.makeFetchRequestOptions(config);
+
+      return fetch(signed.url, options)
+      .then((resp) => {
+        return fetchResponseDataAndLoginToken(resp);
       })
       .catch((err) => {
         return Utils.handleFetchError(err, 'getUserJournals');

@@ -932,25 +932,37 @@ class VaultClientClass {
     });
   }
 
-  getUserJournalsPagination(loginInfo, username, offset, limit) {
+  getUserJournalsPagination(loginInfo, username, offset, limit, filter) {
     return this.getLoginToken({
       blob: loginInfo.blob,
       username,
       offset,
       limit,
+      filter,
     })
     .then(options => this.client.getUserJournalsPagination(options))
     .then(result => this.setLoginToken(result));
   }
 
-  getUserJournals(loginInfo, username, limit, marker) {
+  getUserJournals(loginInfo, username, limit, marker, filter) {
     return this.getLoginToken({
       blob: loginInfo.blob,
       username,
       marker,
       limit,
+      filter,
     })
     .then(options => this.client.getUserJournals(options))
+    .then(result => this.setLoginToken(result));
+  }
+
+  getUserJournalsUnreadCount(loginInfo, username, filter) {
+    return this.getLoginToken({
+      blob: loginInfo.blob,
+      username,
+      filter,
+    })
+    .then(options => this.client.getUserJournalsUnreadCount(options))
     .then(result => this.setLoginToken(result));
   }
 
