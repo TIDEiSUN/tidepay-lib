@@ -14,9 +14,9 @@ function getTrustlineBalanceAmount(trustline) {
 
 function formatBalances(options, balances) {
   var result = balances.trustlines.map(getTrustlineBalanceAmount);
-  if (!(options.counterparty || options.currency && options.currency !== 'XRP')) {
+  if (!(options.counterparty || options.currency && options.currency !== 'XTP')) {
     var xrpBalance = {
-      currency: 'XRP',
+      currency: 'XTP',
       value: balances.xrp
     };
     result.unshift(xrpBalance);
