@@ -7,6 +7,7 @@ import getAccountInfo from './ledger/accountinfo';
 import getTransaction from './ledger/transaction';
 import getTransactions from './ledger/transactions';
 import getTrustlines from './ledger/trustlines';
+import getBalances from './ledger/balances';
 import preparePayment from './transaction/payment';
 import prepareSettings from './transaction/settings';
 import sign from './transaction/sign';
@@ -35,6 +36,7 @@ export default class TidePayDAPIClass {
     this.getTransaction = getTransaction;
     this.getTransactions = getTransactions;
     this.getTrustlines = getTrustlines;
+    this.getBalances = getBalances;
     this.preparePayment = preparePayment;
     this.prepareSettings = prepareSettings;
     this.prepareTrustline = prepareTrustline;

@@ -92,23 +92,17 @@ export default class TidePayAPIClass {
   // }
 
   getAccountBalances(address, options = {}) {
-    return this.getDataApiUrl()
-      .then((data_apiURL) => {
-        const qs = {
-          currency: options.currency,
-        };
-        const url = Utils.addQueryString(`${data_apiURL}/accounts/${address}/balances`, qs);
+    const url = Utils.addQueryString(`${this.isunpayrpcURL}/account/${address}/balances`, options);
 
-        return fetch(url)
-          .then((resp) => {
-            return Utils.handleFetchResponse(resp);
-          })
-          .then((json) => {
-            return json.result;
-          })
-          .catch((err) => {
-            return Utils.handleFetchError(err, 'getAccountBalances');
-          });
+    return fetch(url)
+      .then((resp) => {
+        return Utils.handleFetchResponse(resp);
+      })
+      .then((json) => {
+        return json.result;
+      })
+      .catch((err) => {
+        return Utils.handleFetchError(err, 'getAccountBalances');
       });
   }
 
