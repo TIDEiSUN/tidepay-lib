@@ -20,35 +20,36 @@ module.exports = {
     libraryTarget: 'umd',
     library: 'tidepay',
     path: path.join(__dirname, 'build'),
-    filename: 'index.js'
+    filename: 'index.js',
   },
   module: {
-    loaders: [
-    {
-      test:  /\.js$/,
-      loader: 'babel-loader',
-      exclude: /node_modules/,
-      query: {
-        cacheDirectory: 'babel_cache',
-        presets: ['es2015']
-      }
-    }, {
-      test: /\.json$/,
-      loader: 'json-loader'
-    }
-    ]
+    rules: [
+      {
+        test: /\.js$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'babel-loader',
+          options: {
+            cacheDirectory: 'babel_cache',
+          },
+        },
+      }, {
+        test: /\.json$/,
+        loader: 'json-loader',
+      },
+    ],
   },
   externals: nodeModules,
   plugins: [
     new webpack.DefinePlugin({
-      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV)
+      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
     }),
     new webpack.optimize.OccurrenceOrderPlugin(),
     new webpack.optimize.UglifyJsPlugin({
       compress: { warnings: false },
       mangle: true,
       sourceMap: true,
-      beautify: false
+      beautify: false,
     }),
   ],
 };
