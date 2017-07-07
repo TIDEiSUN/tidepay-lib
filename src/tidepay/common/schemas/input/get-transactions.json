@@ -52,6 +52,14 @@
         "binary": {
           "type": "boolean",
           "description": "If true, the transactions will be sent from the server in a condensed binary format rather than JSON."
+        },
+        "startTx": {
+          "type": "object",
+          "description": "If specified, this transaction will be the first transaction in the result."
+        },
+        "notCheckGaps": {
+          "type": "boolean",
+          "description": "If true, the function will not check ledger gaps."
         }
       },
       "additionalProperties": false,

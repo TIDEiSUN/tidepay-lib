@@ -114,6 +114,9 @@ function checkForLedgerGaps(api, options, transactions) {
 function formatResponse(api, options, transactions) {
   var compare = options.earliestFirst ? utils.compareTransactions : _.rearg(utils.compareTransactions, 1, 0);
   var sortedTransactions = transactions.sort(compare);
+  if (options.notCheckGaps) {
+    return Promise.resolve(sortedTransactions);
+  }
   return checkForLedgerGaps(api, options, sortedTransactions).then(function () {
     return sortedTransactions;
   });
@@ -140,6 +143,13 @@ function getTransactions(address) {
       var newOptions = _.assign({}, defaults, options, { startTx: tx }, bound);
       return getTransactionsInternal(_this, address, newOptions);
     });
+  }
+  if (options.startTx) {
+    const tx = options.startTx;
+    var ledgerVersion = tx.outcome.ledgerVersion;
+    var bound = options.earliestFirst ? { minLedgerVersion: ledgerVersion } : { maxLedgerVersion: ledgerVersion };
+    var newOptions = _.assign({}, defaults, options, { startTx: tx }, bound);
+    return getTransactionsInternal(_this, address, newOptions);
   }
   var newOptions = _.assign({}, defaults, options);
   return getTransactionsInternal(this, address, newOptions);

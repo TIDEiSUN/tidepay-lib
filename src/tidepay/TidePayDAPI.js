@@ -8,6 +8,7 @@ import getTransaction from './ledger/transaction';
 import getTransactions from './ledger/transactions';
 import getTrustlines from './ledger/trustlines';
 import getBalances from './ledger/balances';
+import getLedger from './ledger/ledger';
 import preparePayment from './transaction/payment';
 import prepareSettings from './transaction/settings';
 import sign from './transaction/sign';
@@ -37,6 +38,7 @@ export default class TidePayDAPIClass {
     this.getTransactions = getTransactions;
     this.getTrustlines = getTrustlines;
     this.getBalances = getBalances;
+    this.getLedger = getLedger;
     this.preparePayment = preparePayment;
     this.prepareSettings = prepareSettings;
     this.prepareTrustline = prepareTrustline;
