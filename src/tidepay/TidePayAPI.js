@@ -1,6 +1,47 @@
 import Utils from '../common/utils';
 import sign from './transaction/sign';
 
+function convertMemos(memos) {
+  const stringConstructor = ''.constructor;
+  const objectConstructor = {}.constructor;
+  const arrayConstructor = [].constructor;
+
+  function convertMemo(type, memo) {
+    if (memo === null || memo === undefined) {
+      return [];
+    }
+    if (memo.constructor === stringConstructor) {
+      if (!memo) {
+        return [];
+      }
+      return [{
+        type,
+        data: memo,
+        format: 'text/plain',
+      }];
+    }
+    if (memo.constructor === objectConstructor) {
+      return [{
+        type,
+        data: JSON.stringify(memo),
+        format: 'application/JSON',
+      }];
+    }
+    if (memo.constructor === arrayConstructor) {
+      const converted = memo.map(m => convertMemo(type, m));
+      return [].concat(...converted);
+    }
+    return [];
+  }
+
+  const converted = Object.keys(memos).map((type) => {
+    const memo = memos[type];
+    return convertMemo(type, memo);
+  });
+
+  return [].concat(...converted);
+}
+
 export default class TidePayAPIClass {
   constructor(isunpayrpcURL) {
     this.isunpayrpcURL = isunpayrpcURL;
@@ -183,7 +224,7 @@ export default class TidePayAPIClass {
       });
   }
 
-  sendInternalPayment(gatewayAddress, sourceAccount, destinationAddress, currency, value) {
+  sendInternalPayment(gatewayAddress, sourceAccount, destinationAddress, currency, value, clientMemo = null) {
     const amount = {
       currency,
       value,
@@ -199,10 +240,14 @@ export default class TidePayAPIClass {
         amount: amount,
       },
     };
+    if (clientMemo) {
+      const memos = { client: clientMemo };
+      payment.memos = convertMemos(memos);
+    }
     return this.sendPayment(sourceAccount, payment);
   }
 
-  sendExternalPayment(gatewayAddress, sourceAccount, currency, value, memo = null) {
+  sendExternalPayment(gatewayAddress, sourceAccount, currency, value, actionMemo = null, clientMemo = null) {
     const amount = {
       currency,
       value,
@@ -218,16 +263,14 @@ export default class TidePayAPIClass {
         amount: amount,
       },
     };
-    if (memo) {
-      payment.memos = [{
-        data: JSON.stringify(memo),
-        format: 'application/JSON',
-      }];
+    if (actionMemo || clientMemo) {
+      const memos = { action: actionMemo, client: clientMemo };
+      payment.memos = convertMemos(memos);
     }
     return this.sendPayment(sourceAccount, payment);
   }
 
-  exchangeCurrency(gatewayAddress, account, fromCurrency, fromValue, toCurrency, exchangeRate) {
+  exchangeCurrency(gatewayAddress, account, fromCurrency, fromValue, toCurrency, exchangeRate, clientMemo = null) {
     const payment = {
       source: {
         address: account.address,
@@ -246,6 +289,10 @@ export default class TidePayAPIClass {
         },
       },
     };
+    if (clientMemo) {
+      const memos = { client: clientMemo };
+      payment.memos = convertMemos(memos);
+    }
     return this.sendPayment(account, payment);
   }
 
