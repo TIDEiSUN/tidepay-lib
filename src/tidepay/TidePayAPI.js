@@ -227,7 +227,7 @@ export default class TidePayAPIClass {
   sendInternalPayment(gatewayAddress, sourceAccount, destinationAddress, currency, value, clientMemo = null) {
     const amount = {
       currency,
-      value,
+      value: String(value),
       counterparty: gatewayAddress,
     };
     const payment = {
@@ -250,7 +250,7 @@ export default class TidePayAPIClass {
   sendExternalPayment(gatewayAddress, sourceAccount, currency, value, actionMemo = null, clientMemo = null) {
     const amount = {
       currency,
-      value,
+      value: String(value),
       counterparty: gatewayAddress,
     };
     const payment = {
@@ -276,7 +276,7 @@ export default class TidePayAPIClass {
         address: account.address,
         amount: {
           currency: fromCurrency,
-          value: fromValue,
+          value: String(fromValue),
           counterparty: gatewayAddress,
         },
       },
